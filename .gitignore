@@ -1,0 +1,12 @@
+
+# inside backend folder:
+venv/
+credentials.json
+token.json
+# frontend files
+node_modules/
+firebase.json
+serviceAccountKey.json
+
+__pycache__/
+*.pyc
