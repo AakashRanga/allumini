@@ -37,10 +37,10 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900 mb-2 flex items-center gap-3">
+          <h3 className="text-xl font-bold text-slate-900 mb-2 flex items-center gap-3">
             Dashboard
             <Sparkles className="w-8 h-8 text-purple-500" />
-          </h1>
+          </h3>
           <p className="text-slate-600 text-lg">Overview of alumni network and platform activity</p>
         </div>
         <div className="glass px-6 py-3 rounded-full border border-white/20">
@@ -71,7 +71,7 @@ export default function AdminDashboard() {
                     {stat.change}
                   </span>
                 </div>
-                <p className="text-4xl font-bold text-slate-900 mb-2">{stat.value}</p>
+                <p className="text-2xl font-bold text-slate-900 mb-2">{stat.value}</p>
                 <p className="text-sm text-slate-600 font-medium">{stat.label}</p>
               </div>
             </div>

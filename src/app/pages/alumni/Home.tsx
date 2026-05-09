@@ -98,7 +98,7 @@ export default function AlumniHome() {
             <Sparkles className="w-6 h-6 text-[#0A66C2]" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Home Feed</h1>
+            <h3 className="text-xl font-bold text-gray-900">Home Feed</h3>
             <p className="text-gray-600">Stay connected with your alumni community</p>
           </div>
         </div>

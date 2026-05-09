@@ -70,7 +70,7 @@ export default function ViewJobs() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Job Opportunities</h1>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Job Opportunities</h3>
             <p className="text-gray-600">Explore career opportunities shared by our community</p>
           </div>
 

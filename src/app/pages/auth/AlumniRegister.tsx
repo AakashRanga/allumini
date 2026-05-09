@@ -205,9 +205,9 @@ export default function AlumniRegister() {
             <Users className="w-8 h-8 text-[#0A66C2]" />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">
+          <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
             Join SACRED
-          </h1>
+          </h3>
           <p className="text-gray-600 text-center mb-6">
             Create your alumni account
           </p>

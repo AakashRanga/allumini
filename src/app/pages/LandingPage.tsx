@@ -53,11 +53,11 @@ export default function LandingPage() {
             <span className="text-sm font-medium text-purple-900">Welcome to the Future of Alumni Networking</span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold text-slate-900 mb-6 leading-tight">
+          <h3 className="text-xl md:text-7xl font-bold text-slate-900 mb-6 leading-tight">
             Connect. Collaborate.
             <br />
             <span className="gradient-text">Grow Together.</span>
-          </h1>
+          </h3>
 
           <p className="text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto mb-10 leading-relaxed">
             Join our vibrant alumni community to network with fellow graduates, discover opportunities,

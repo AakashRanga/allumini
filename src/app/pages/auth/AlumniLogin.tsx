@@ -71,7 +71,7 @@ export default function AlumniLogin() {
             <Users className="w-8 h-8 text-[#0A66C2]" />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">SACRED Alumni Login</h1>
+          <h3 className="text-xl font-bold text-gray-900 text-center mb-2">SACRED Alumni Login</h3>
           <p className="text-gray-600 text-center mb-8">Welcome back to your community</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">

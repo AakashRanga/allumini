@@ -23,6 +23,7 @@ import ViewAchievements from "./pages/alumni/Achievements";
 import ViewJobs from "./pages/alumni/Jobs";
 import Messages from "./pages/alumni/Messages";
 import Profile from "./pages/alumni/Profile";
+import Newsletter from "./pages/alumni/Newsletter";
 import AlumniNotifications from "./pages/alumni/Notifications";
 
 import NotFound from "./pages/NotFound";
@@ -86,6 +87,7 @@ export const router = createBrowserRouter([
       { path: "achievements", Component: ViewAchievements },
       { path: "jobs", Component: ViewJobs },
       { path: "messages", Component: Messages },
+      { path: "newsletter", Component: Newsletter },
       { path: "profile", Component: Profile },
       { path: "notifications", Component: AlumniNotifications },
     ],

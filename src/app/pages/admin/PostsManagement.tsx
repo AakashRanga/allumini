@@ -51,7 +51,7 @@ export default function PostsManagement() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Posts & Achievements</h1>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Posts & Achievements</h3>
         <p className="text-gray-600">Manage alumni posts and achievements</p>
       </div>
 

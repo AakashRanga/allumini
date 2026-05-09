@@ -41,9 +41,9 @@ export default function CreatePost() {
       </button>
 
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
           {postType === "job" ? "Share Job Opportunity" : "Post Achievement"}
-        </h1>
+        </h3>
         <p className="text-gray-600">
           {postType === "job"
             ? "Help fellow alumni by sharing job openings"

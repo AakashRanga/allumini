@@ -1,17 +1,16 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { useEffect } from "react";
 import {
   Home,
   PlusSquare,
   Trophy,
   Briefcase,
   MessageCircle,
+  Newspaper,
   User,
   Bell,
   LogOut,
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { clearAuthSession, refreshAuthSessionActivity } from "@/lib/session";
 import logoSrc from "../../imports/logo.png";
 
 const navItems = [
@@ -19,6 +18,7 @@ const navItems = [
   { path: "/alumni/post", label: "Share", icon: PlusSquare },
   { path: "/alumni/jobs", label: "Jobs", icon: Briefcase },
   { path: "/alumni/messages", label: "Messages", icon: MessageCircle },
+  { path: "/alumni/newsletter", label: "Newsletter", icon: Newspaper },
   { path: "/alumni/profile", label: "Profile", icon: User },
 ];
 
@@ -26,32 +26,13 @@ export default function AlumniLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    const session = refreshAuthSessionActivity();
-    if (!session || session.role !== "alumni") {
-      clearAuthSession();
-      navigate("/auth/login");
-      return;
-    }
-
-    if (!session.approved) {
-      clearAuthSession();
-      navigate("/auth/waiting");
-    }
-  }, [location.pathname, navigate]);
-
-  const handleLogout = () => {
-    clearAuthSession();
-    navigate("/auth/login");
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-white shadow-md border-2 border-blue-100">
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-md border-2 border-blue-100">
                 <ImageWithFallback
                   src={logoSrc}
                   alt="SACRED Logo"
@@ -103,7 +84,7 @@ export default function AlumniLayout() {
               </button>
 
               <button
-                onClick={handleLogout}
+                onClick={() => navigate("/")}
                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
                 <LogOut className="w-5 h-5" />

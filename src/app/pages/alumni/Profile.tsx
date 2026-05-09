@@ -44,7 +44,7 @@ export default function Profile() {
               .join("")}
           </div>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{profileData.name}</h1>
+            <h3 className="text-xl font-bold mb-2">{profileData.name}</h3>
             <p className="text-blue-100 mb-4">
               {profileData.position} at {profileData.company}
             </p>

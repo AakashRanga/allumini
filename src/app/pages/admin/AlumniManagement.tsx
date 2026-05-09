@@ -64,7 +64,7 @@ export default function AlumniManagement() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Alumni Management</h1>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Alumni Management</h3>
         <p className="text-gray-600">View and manage all registered alumni</p>
       </div>
 

@@ -15,7 +15,7 @@ export default function ApprovalSuccess() {
             <Sparkles className="w-5 h-5 text-green-400 absolute -top-1 -right-1 animate-pulse" />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to SACRED! 🎉</h1>
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Welcome to SACRED! 🎉</h3>
           <p className="text-lg text-gray-700 mb-6">Your account has been approved</p>
 
           <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-8">

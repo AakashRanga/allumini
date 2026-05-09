@@ -181,7 +181,7 @@ export default function AuthLogin() {
             <Users className="w-8 h-8 text-[#0A66C2]" />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">Sign in to SACRED</h1>
+          <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Sign in to SACRED</h3>
           <p className="text-gray-600 text-center mb-8">Access your dashboard using your email and password.</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">

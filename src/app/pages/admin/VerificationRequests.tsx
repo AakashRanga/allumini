@@ -152,7 +152,7 @@ export default function VerificationRequests() {
     <div className="max-w-[1800px] mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Verification Requests</h1>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Verification Requests</h3>
           <p className="text-gray-600">Cross-verify and approve pending alumni registrations</p>
         </div>
         <div className="bg-amber-100 text-amber-700 px-4 py-2 rounded-xl font-medium flex items-center gap-2">
@@ -291,8 +291,8 @@ export default function VerificationRequests() {
         </div>
 
         {/* Right Panel - Authorized Alumni Database */}
-        <div className="space-y-4">
-          <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 border-2 border-blue-200 sticky top-6">
+        <div className="space-y-4 lg:sticky lg:top-6 self-start">
+          <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 border-2 border-blue-200">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                 <Users className="w-5 h-5 text-blue-600" />

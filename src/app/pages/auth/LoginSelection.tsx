@@ -16,7 +16,7 @@ export default function LoginSelection() {
         </button>
 
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Welcome Back</h1>
+          <h3 className="text-xl font-bold text-gray-900 mb-3">Welcome Back</h3>
           <p className="text-gray-600">Select your role to continue</p>
         </div>
 

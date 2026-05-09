@@ -72,7 +72,7 @@ export default function ResetPassword() {
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">Password Reset!</h1>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Password Reset!</h3>
             <p className="text-gray-600 text-center mb-8">
               Your password has been successfully reset. You can now sign in with your new password.
             </p>
@@ -105,7 +105,7 @@ export default function ResetPassword() {
             <Lock className="w-8 h-8 text-[#0A66C2]" />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">Reset Password</h1>
+          <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Reset Password</h3>
           <p className="text-gray-600 text-center mb-8">Enter your new password</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">

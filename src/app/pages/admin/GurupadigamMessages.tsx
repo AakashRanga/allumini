@@ -128,7 +128,7 @@ export default function GurupadigamMessages() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Gurupadigam Messages</h1>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Gurupadigam Messages</h3>
           <p className="text-gray-600">Send important messages and announcements to all alumni</p>
         </div>
         <button

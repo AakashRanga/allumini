@@ -52,7 +52,7 @@ export default function ForgotPassword() {
               <Mail className="w-8 h-8 text-green-600" />
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">Check Your Email</h1>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Check Your Email</h3>
             <p className="text-gray-600 text-center mb-8">
               We've sent password reset instructions to <span className="font-semibold">{email}</span>
             </p>
@@ -89,7 +89,7 @@ export default function ForgotPassword() {
             <KeyRound className="w-8 h-8 text-[#0A66C2]" />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">Forgot Password</h1>
+          <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Forgot Password</h3>
           <p className="text-gray-600 text-center mb-8">Enter your email to reset your password</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">

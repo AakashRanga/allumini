@@ -129,7 +129,7 @@ export default function WaitingApproval() {
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Email Verified!</h1>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Email Verified!</h3>
             <p className="text-lg text-gray-700 mb-6">Your email has been verified successfully.</p>
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
@@ -167,7 +167,7 @@ export default function WaitingApproval() {
             <Mail className="w-10 h-10 text-amber-600" />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Verify Your Email</h1>
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Verify Your Email</h3>
           <p className="text-lg text-gray-700 mb-2">We've sent an OTP to your email</p>
           <p className="text-gray-500 mb-6">{email}</p>
 
