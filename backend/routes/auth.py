@@ -59,6 +59,15 @@ auth_bp = Blueprint("auth", __name__)
 def generate_otp():
     return "".join(random.choices(string.digits, k=6))
 
+def get_authenticated_user_id():
+    user_id = request.headers.get("X-Auth-User-Id")
+    if not user_id:
+        return None
+    try:
+        return int(user_id)
+    except ValueError:
+        return None
+
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json(silent=True)
@@ -448,6 +457,101 @@ def user_status():
         return jsonify({"error": str(e)}), 500
 
 
+
+
+@auth_bp.route("/profile", methods=["GET"])
+def get_profile():
+    user_id = get_authenticated_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        user = execute_query(
+            f"SELECT id, name, email, contact_number, academic_details, specialization, awards, honorary_degrees, books_authored, other_accolades, previous_experience FROM {TABLE_ALUMNI_USERS} WHERE id=%s",
+            (user_id,),
+            fetch_one=True
+        )
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        for key in ["academic_details", "awards", "honorary_degrees", "books_authored", "other_accolades", "previous_experience"]:
+            value = user.get(key)
+            if value is None:
+                user[key] = []
+            else:
+                try:
+                    user[key] = json.loads(value) if isinstance(value, str) else value
+                except Exception:
+                    user[key] = []
+
+        return jsonify(user), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@auth_bp.route("/profile", methods=["PUT"])
+def update_profile():
+    user_id = get_authenticated_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid JSON body"}), 400
+
+    allowed_fields = [
+        "name",
+        "contact_number",
+        "academic_details",
+        "specialization",
+        "awards",
+        "honorary_degrees",
+        "books_authored",
+        "other_accolades",
+        "previous_experience",
+    ]
+
+    updates = []
+    params = []
+    json_fields = {
+        "academic_details",
+        "awards",
+        "honorary_degrees",
+        "books_authored",
+        "other_accolades",
+        "previous_experience",
+    }
+
+    for field in allowed_fields:
+        if field not in data:
+            continue
+
+        value = data.get(field)
+        if field in json_fields:
+            if value is None or value == []:
+                value = None
+            else:
+                try:
+                    value = json.dumps(value)
+                except Exception:
+                    return jsonify({"error": f"Invalid data for {field}"}), 400
+
+        updates.append(f"{field} = %s")
+        params.append(value)
+
+    if not updates:
+        return jsonify({"error": "No profile fields provided"}), 400
+
+    query = f"UPDATE {TABLE_ALUMNI_USERS} SET {', '.join(updates)}, updated_at = CURRENT_TIMESTAMP WHERE id = %s"
+    params.append(user_id)
+
+    try:
+        execute_query(query, tuple(params))
+        return jsonify({"message": "Profile updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @auth_bp.route("/forgot-password", methods=["POST"])
