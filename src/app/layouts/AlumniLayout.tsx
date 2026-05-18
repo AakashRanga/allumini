@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router";
 import {
   Home,
@@ -12,6 +13,9 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import logoSrc from "../../imports/logo.png";
+import { getUserProfile, type UserProfile } from "@/lib/api";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5555";
 
 const navItems = [
   { path: "/alumni", label: "Home", icon: Home },
@@ -25,14 +29,35 @@ const navItems = [
 export default function AlumniLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    async function fetchUserProfile() {
+      const response = await getUserProfile();
+      if (response.success) {
+        setUserProfile(response.data);
+      }
+    }
+    void fetchUserProfile();
+  }, []);
+
+  const userInitials = userProfile?.name
+    ? userProfile.name
+        .split(" ")
+        .filter(Boolean)
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "JD";
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-3">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-md border-2 border-blue-100">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-white shadow-md border-2 border-blue-100">
                 <ImageWithFallback
                   src={logoSrc}
                   alt="SACRED Logo"
@@ -76,10 +101,19 @@ export default function AlumniLayout() {
 
               <button
                 onClick={() => navigate("/alumni/profile")}
-                className="hidden md:flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Open profile"
               >
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-[#0A66C2] font-medium">JD</span>
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                  {userProfile?.profile_image ? (
+                    <img
+                      src={`${API_BASE_URL}/profile-images/${userProfile.profile_image}`}
+                      alt={userProfile.name || "Profile"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-[#0A66C2] font-medium">{userInitials}</span>
+                  )}
                 </div>
               </button>
 
@@ -100,7 +134,7 @@ export default function AlumniLayout() {
 
       <nav className="md:hidden bg-white border-t border-gray-200 sticky bottom-0 z-50">
         <div className="flex items-center justify-around px-2 py-3">
-          {navItems.slice(0, 5).map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (

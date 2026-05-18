@@ -1,57 +1,43 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, Filter, Eye, Mail, Phone, GraduationCap, Calendar, CheckCircle, Clock } from "lucide-react";
 
-const alumniData = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    email: "sarah.j@email.com",
-    phone: "+1 234 567 8901",
-    degree: "UG",
-    specialization: "Computer Science",
-    batch: "2020",
-    status: "Verified",
-    avatar: "SJ",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    email: "m.chen@email.com",
-    phone: "+1 234 567 8902",
-    degree: "PG",
-    specialization: "Data Science",
-    batch: "2021",
-    status: "Verified",
-    avatar: "MC",
-  },
-  {
-    id: 3,
-    name: "Emily Davis",
-    email: "emily.d@email.com",
-    phone: "+1 234 567 8903",
-    degree: "UG",
-    specialization: "Mechanical Engineering",
-    batch: "2022",
-    status: "Pending",
-    avatar: "ED",
-  },
-  {
-    id: 4,
-    name: "James Wilson",
-    email: "james.w@email.com",
-    phone: "+1 234 567 8904",
-    degree: "PG",
-    specialization: "Business Analytics",
-    batch: "2023",
-    status: "Verified",
-    avatar: "JW",
-  },
-];
+interface Alumni {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  degree: string;
+  specialization: string;
+  batch: string;
+  status: string;
+  avatar: string;
+  academic_details: any;
+}
 
 export default function AlumniManagement() {
+  const [alumniData, setAlumniData] = useState<Alumni[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedAlumni, setSelectedAlumni] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDegree, setFilterDegree] = useState("all");
+
+  useEffect(() => {
+    fetchAlumni();
+  }, []);
+
+  const fetchAlumni = async () => {
+    try {
+      const response = await fetch("http://localhost:5555/verification/all-alumni");
+      const data = await response.json();
+      if (data.success) {
+        setAlumniData(data.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch alumni:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredAlumni = alumniData.filter((alumni) => {
     const matchesSearch =
@@ -96,6 +82,11 @@ export default function AlumniManagement() {
           </div>
         </div>
 
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          </div>
+        ) : (
         <div className="grid gap-4">
           {filteredAlumni.map((alumni) => (
             <div
@@ -170,6 +161,26 @@ export default function AlumniManagement() {
                         <span className="text-gray-600">Specialization:</span>
                         <span className="font-medium text-gray-900">{alumni.specialization}</span>
                       </div>
+                      {alumni.academic_details && (
+                        <div className="md:col-span-2 mt-2 pt-2 border-t border-gray-200">
+                          <span className="text-gray-600 block mb-1 text-sm">Full Academic Details:</span>
+                          <pre className="text-xs bg-white p-3 rounded-lg border border-gray-100 overflow-x-auto text-gray-800">
+                            {(() => {
+                              try {
+                                return JSON.stringify(
+                                  typeof alumni.academic_details === 'string' 
+                                    ? JSON.parse(alumni.academic_details) 
+                                    : alumni.academic_details, 
+                                  null, 
+                                  2
+                                );
+                              } catch (e) {
+                                return alumni.academic_details;
+                              }
+                            })()}
+                          </pre>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -177,8 +188,9 @@ export default function AlumniManagement() {
             </div>
           ))}
         </div>
+        )}
 
-        {filteredAlumni.length === 0 && (
+        {!loading && filteredAlumni.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500">No alumni found matching your criteria</p>
           </div>

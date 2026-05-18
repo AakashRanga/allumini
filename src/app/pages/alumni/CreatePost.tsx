@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Trophy, Upload, ArrowLeft, Briefcase, MapPin, DollarSign } from "lucide-react";
+import { getAuthSession } from "@/lib/session";
 
 export default function CreatePost() {
   const navigate = useNavigate();
@@ -19,15 +20,75 @@ export default function CreatePost() {
     title: "",
     description: "",
   });
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
-  const handleJobSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate("/alumni");
+  const getUserId = () => {
+    const session = getAuthSession();
+    return session ? parseInt(session.userId) : 1;
   };
 
-  const handleAchievementSubmit = (e: React.FormEvent) => {
+  const handleJobSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/alumni");
+    try {
+      const response = await fetch("http://localhost:5555/posts/job", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...jobFormData, user_id: getUserId() }),
+      });
+      if (response.ok) {
+        navigate("/alumni/jobs");
+      } else {
+        alert("Failed to post job");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error posting job");
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newFiles = Array.from(files);
+      setSelectedImages((prev) => [...prev, ...newFiles]);
+
+      newFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreviews((prev) => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAchievementSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("http://localhost:5555/posts/achievement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...achievementFormData,
+          user_id: getUserId(),
+          imageUrls: imagePreviews.length > 0 ? imagePreviews : []
+        }),
+      });
+      if (response.ok) {
+        navigate("/alumni/achievements");
+      } else {
+        alert("Failed to post achievement");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error posting achievement");
+    }
   };
 
   return (
@@ -208,7 +269,7 @@ export default function CreatePost() {
 
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-900">
-                <strong>Note:</strong> Your job posting will be reviewed by admins before appearing on the platform.
+                <strong>Note:</strong> Your job posting will be immediately visible to other alumni, but is subject to admin moderation.
               </p>
             </div>
 
@@ -261,17 +322,60 @@ export default function CreatePost() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Image (Optional)</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-[#0A66C2] transition-colors cursor-pointer">
-                <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 mb-1">Click to upload or drag and drop</p>
-                <p className="text-sm text-gray-500">PNG, JPG up to 10MB</p>
-              </div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Images (Optional)</label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                className="hidden"
+                id="achievement-image-upload"
+              />
+              {imagePreviews.length === 0 ? (
+                <label
+                  htmlFor="achievement-image-upload"
+                  className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-[#0A66C2] transition-colors cursor-pointer block"
+                >
+                  <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 mb-1">Click to upload or drag and drop</p>
+                  <p className="text-sm text-gray-500">PNG, JPG up to 10MB (multiple files allowed)</p>
+                </label>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-xl border border-gray-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <label
+                    htmlFor="achievement-image-upload"
+                    className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-[#0A66C2] transition-colors cursor-pointer block"
+                  >
+                    <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                    <p className="text-sm text-gray-500">Add more images</p>
+                  </label>
+                </div>
+              )}
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-900">
-                <strong>Note:</strong> Your achievement will be reviewed by admins before appearing on the platform.
+                <strong>Note:</strong> Your achievement will be immediately visible to other alumni, but is subject to admin moderation.
               </p>
             </div>
 

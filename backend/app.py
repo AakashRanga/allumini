@@ -1,16 +1,35 @@
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from routes.auth import auth_bp
 from routes.verification import verification_bp
 from routes.posts import posts_bp
+from routes.gurupadigam import gurupadigam_bp
 from db import get_connection
 from models import (
-    CREATE_ALUMNI_USERS_TABLE, TABLE_ALUMNI_USERS, 
+    CREATE_ALUMNI_USERS_TABLE, TABLE_ALUMNI_USERS,
     CREATE_OVERALL_ALUMNI_TABLE, TABLE_OVERALL_ALUMNI,
     CREATE_JOBS_TABLE, TABLE_JOBS,
-    CREATE_ACHIEVEMENTS_TABLE, TABLE_ACHIEVEMENTS
+    CREATE_ACHIEVEMENTS_TABLE, TABLE_ACHIEVEMENTS,
+    CREATE_GURUPADIGAM_MESSAGES_TABLE, TABLE_GURUPADIGAM_MESSAGES
 )
+import os
 
 app = Flask(__name__)
+
+# Profile images configuration
+PROFILE_IMAGES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'profile_images')
+os.makedirs(PROFILE_IMAGES_DIR, exist_ok=True)
+
+# Gurupadigam attachments configuration
+GURUPADIGAM_ATTACHMENTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gurupadigam_attachments')
+os.makedirs(GURUPADIGAM_ATTACHMENTS_DIR, exist_ok=True)
+
+@app.route('/profile-images/<filename>')
+def serve_profile_image(filename):
+    return send_from_directory(PROFILE_IMAGES_DIR, filename)
+
+@app.route('/gurupadigam-attachments/<filename>')
+def serve_gurupadigam_attachment(filename):
+    return send_from_directory(GURUPADIGAM_ATTACHMENTS_DIR, filename)
 
 @app.before_request
 def handle_options():
@@ -127,6 +146,15 @@ def init_db():
         if "Duplicate column name" not in str(e):
             print(f"Note: image_url migration: {e}")
 
+    # Create gurupadigam_messages table if not exists
+    cursor.execute(CREATE_GURUPADIGAM_MESSAGES_TABLE)
+    expected_columns = parse_columns_from_sql(CREATE_GURUPADIGAM_MESSAGES_TABLE)
+    existing_columns = get_table_columns(cursor, TABLE_GURUPADIGAM_MESSAGES)
+    for col_name, col_def in expected_columns.items():
+        if col_name not in existing_columns:
+            print(f"Adding missing column to {TABLE_GURUPADIGAM_MESSAGES}: {col_name}")
+            cursor.execute(f"ALTER TABLE `{TABLE_GURUPADIGAM_MESSAGES}` ADD COLUMN {col_name} {col_def}")
+
 
     # Create indexes for overall_alumni (if they don't exist)
     index_statements = [
@@ -156,6 +184,7 @@ def init_db():
 app.register_blueprint(auth_bp, url_prefix="/auth")
 app.register_blueprint(verification_bp, url_prefix="/verification")
 app.register_blueprint(posts_bp, url_prefix="/posts")
+app.register_blueprint(gurupadigam_bp, url_prefix="/gurupadigam")
 
 if __name__ == "__main__":
     init_db()

@@ -1,152 +1,163 @@
-import { useState } from "react";
-import { CheckCircle, XCircle, AlertCircle, Mail, Phone, GraduationCap, Calendar, Search, Filter, UserCheck, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CheckCircle, XCircle, AlertCircle, Mail, Phone, GraduationCap, Calendar, Search, Filter, UserCheck, Users, Loader } from "lucide-react";
+import { apiCall } from "@/lib/api";
 
-const pendingRequests = [
-  {
-    id: 1,
-    name: "Alex Thompson",
-    email: "alex.t@email.com",
-    phone: "+1 234 567 8905",
-    degree: "UG",
-    specialization: "Electrical Engineering",
-    batch: "2024",
-    submittedDate: "2026-04-25",
-  },
-  {
-    id: 2,
-    name: "Sophia Martinez",
-    email: "sophia.m@email.com",
-    phone: "+1 234 567 8906",
-    degree: "PG",
-    specialization: "Artificial Intelligence",
-    batch: "2023",
-    submittedDate: "2026-04-26",
-  },
-  {
-    id: 3,
-    name: "David Kim",
-    email: "david.k@email.com",
-    phone: "+1 234 567 8907",
-    degree: "UG",
-    specialization: "Civil Engineering",
-    batch: "2022",
-    submittedDate: "2026-04-27",
-  },
-];
+interface VerificationRequest {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  degree: string;
+  specialization: string;
+  batch: string;
+  submittedDate: string;
+}
 
-const authorizedAlumni = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    email: "sarah.j@college.edu",
-    degree: "UG",
-    specialization: "Computer Science",
-    batch: "2020",
-    rollNumber: "20CS001",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    email: "michael.c@college.edu",
-    degree: "PG",
-    specialization: "Data Science",
-    batch: "2021",
-    rollNumber: "21DS001",
-  },
-  {
-    id: 3,
-    name: "Emily Davis",
-    email: "emily.d@college.edu",
-    degree: "UG",
-    specialization: "Mechanical Engineering",
-    batch: "2022",
-    rollNumber: "22ME001",
-  },
-  {
-    id: 4,
-    name: "James Wilson",
-    email: "james.w@college.edu",
-    degree: "PG",
-    specialization: "Business Analytics",
-    batch: "2023",
-    rollNumber: "23BA001",
-  },
-  {
-    id: 5,
-    name: "Alex Thompson",
-    email: "alex.t@college.edu",
-    degree: "UG",
-    specialization: "Electrical Engineering",
-    batch: "2024",
-    rollNumber: "24EE001",
-  },
-  {
-    id: 6,
-    name: "Priya Sharma",
-    email: "priya.s@college.edu",
-    degree: "UG",
-    specialization: "Computer Science",
-    batch: "2020",
-    rollNumber: "20CS002",
-  },
-  {
-    id: 7,
-    name: "Robert Martinez",
-    email: "robert.m@college.edu",
-    degree: "PG",
-    specialization: "Artificial Intelligence",
-    batch: "2023",
-    rollNumber: "23AI001",
-  },
-  {
-    id: 8,
-    name: "Sophia Martinez",
-    email: "sophia.m@college.edu",
-    degree: "PG",
-    specialization: "Artificial Intelligence",
-    batch: "2023",
-    rollNumber: "23AI002",
-  },
-];
+interface AlumniRecord {
+  id: number;
+  name: string;
+  email: string;
+  degree: string;
+  specialization: string;
+  batch: string;
+  roll_number: string;
+}
+
+interface MatchInfo {
+  [key: number]: {
+    has_match: boolean;
+    matches: AlumniRecord[];
+  };
+}
 
 export default function VerificationRequests() {
-  const [requests, setRequests] = useState(pendingRequests);
+  const [requests, setRequests] = useState<VerificationRequest[]>([]);
+  const [authorizedAlumni, setAuthorizedAlumni] = useState<AlumniRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [batchFilter, setBatchFilter] = useState("all");
   const [degreeFilter, setDegreeFilter] = useState("all");
   const [selectedRequest, setSelectedRequest] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [batches, setBatches] = useState<string[]>([]);
+  const [degrees, setDegrees] = useState<string[]>([]);
+  const [matchInfo, setMatchInfo] = useState<MatchInfo>({});
+  const [approveRejectLoading, setApproveRejectLoading] = useState<number | null>(null);
 
-  const handleApprove = (id: number) => {
-    setRequests(requests.filter((req) => req.id !== id));
-    setSelectedRequest(null);
+  // Fetch verification requests on mount
+  useEffect(() => {
+    fetchRequests();
+    fetchFilters();
+  }, []);
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await apiCall("/verification/requests", "GET");
+      if (response.success) {
+        const actualData = response.data?.data || [];
+        setRequests(actualData);
+        // Check matches for each request
+        actualData.forEach((req: VerificationRequest) => {
+          checkMatch(req.id);
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReject = (id: number) => {
-    setRequests(requests.filter((req) => req.id !== id));
-    setSelectedRequest(null);
+  const fetchFilters = async () => {
+    try {
+      const [batchesRes, degreesRes] = await Promise.all([
+        apiCall("/verification/get-batches", "GET"),
+        apiCall("/verification/get-degrees", "GET"),
+      ]);
+      
+      if (batchesRes.success) {
+        setBatches(batchesRes.data?.data || []);
+      }
+      if (degreesRes.success) {
+        setDegrees(degreesRes.data?.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching filters:", error);
+    }
   };
 
-  const filteredAlumni = authorizedAlumni.filter((alumni) => {
-    const matchesSearch =
-      alumni.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      alumni.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      alumni.rollNumber.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesBatch = batchFilter === "all" || alumni.batch === batchFilter;
-    const matchesDegree = degreeFilter === "all" || alumni.degree === degreeFilter;
-    return matchesSearch && matchesBatch && matchesDegree;
-  });
-
-  const findMatchingAlumni = (request: typeof pendingRequests[0]) => {
-    return authorizedAlumni.find(
-      (alumni) =>
-        alumni.name.toLowerCase() === request.name.toLowerCase() &&
-        alumni.batch === request.batch &&
-        alumni.specialization === request.specialization
-    );
+  const checkMatch = async (userId: number) => {
+    try {
+      const response = await apiCall("/verification/check-match", "POST", { user_id: userId });
+      if (response.success) {
+        setMatchInfo((prev) => ({
+          ...prev,
+          [userId]: {
+            has_match: response.data?.has_match || false,
+            matches: response.data?.matches || [],
+          },
+        }));
+      }
+    } catch (error) {
+      console.error("Error checking match:", error);
+    }
   };
 
-  const batches = Array.from(new Set(authorizedAlumni.map((a) => a.batch))).sort();
-  const degrees = Array.from(new Set(authorizedAlumni.map((a) => a.degree)));
+  const searchAlumni = async () => {
+    try {
+      const response = await apiCall("/verification/search", "POST", {
+        query: searchQuery,
+        batch: batchFilter,
+        degree: degreeFilter,
+      });
+      
+      if (response.success) {
+        setAuthorizedAlumni(response.data?.data || []);
+      }
+    } catch (error) {
+      console.error("Error searching alumni:", error);
+    }
+  };
+
+  // Search whenever filters change
+  useEffect(() => {
+    searchAlumni();
+  }, [searchQuery, batchFilter, degreeFilter]);
+
+  const handleApprove = async (id: number) => {
+    try {
+      setApproveRejectLoading(id);
+      const response = await apiCall("/verification/approve", "POST", { user_id: id });
+      if (response.success) {
+        setRequests(requests.filter((req) => req.id !== id));
+        setSelectedRequest(null);
+      }
+    } catch (error) {
+      console.error("Error approving user:", error);
+    } finally {
+      setApproveRejectLoading(null);
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    try {
+      setApproveRejectLoading(id);
+      const response = await apiCall("/verification/reject", "POST", {
+        user_id: id,
+        reason: "Rejected by admin",
+      });
+      if (response.success) {
+        setRequests(requests.filter((req) => req.id !== id));
+        setSelectedRequest(null);
+      }
+    } catch (error) {
+      console.error("Error rejecting user:", error);
+    } finally {
+      setApproveRejectLoading(null);
+    }
+  };
+
+  const filteredAlumni = authorizedAlumni;
 
   return (
     <div className="max-w-[1800px] mx-auto space-y-6">
@@ -162,7 +173,6 @@ export default function VerificationRequests() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">{/* Left Panel - Pending Requests */}
-
         <div className="space-y-4">
           <div className="bg-gradient-to-br from-amber-50 to-white rounded-2xl p-6 border-2 border-amber-200">
             <div className="flex items-center gap-3 mb-4">
@@ -174,7 +184,12 @@ export default function VerificationRequests() {
             <p className="text-sm text-gray-600">Click on a request to cross-verify with authorized alumni database</p>
           </div>
 
-          {requests.length === 0 ? (
+          {loading ? (
+            <div className="bg-white rounded-2xl p-12 border border-gray-200 text-center">
+              <Loader className="w-8 h-8 text-amber-500 mx-auto mb-4 animate-spin" />
+              <p className="text-gray-600">Loading verification requests...</p>
+            </div>
+          ) : requests.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 border border-gray-200 text-center">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">All Caught Up!</h3>
@@ -182,8 +197,9 @@ export default function VerificationRequests() {
             </div>
           ) : (
             requests.map((request) => {
-              const matchingAlumni = findMatchingAlumni(request);
+              const match = matchInfo[request.id];
               const isSelected = selectedRequest === request.id;
+              const isProcessing = approveRejectLoading === request.id;
 
               return (
                 <div
@@ -192,15 +208,17 @@ export default function VerificationRequests() {
                   className={`bg-white rounded-2xl p-6 border-2 hover:shadow-lg transition-all cursor-pointer ${
                     isSelected
                       ? "border-purple-400 shadow-lg ring-2 ring-purple-200"
-                      : matchingAlumni
+                      : match?.has_match
                       ? "border-green-300"
                       : "border-gray-200"
                   }`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-semibold flex-shrink-0 ${
-                      matchingAlumni ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"
-                    }`}>
+                    <div
+                      className={`w-14 h-14 rounded-xl flex items-center justify-center font-semibold flex-shrink-0 ${
+                        match?.has_match ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"
+                      }`}
+                    >
                       {request.name
                         .split(" ")
                         .map((n) => n[0])
@@ -220,7 +238,7 @@ export default function VerificationRequests() {
                             <AlertCircle className="w-3 h-3" />
                             Pending Review
                           </span>
-                          {matchingAlumni && (
+                          {match?.has_match && (
                             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium flex items-center gap-1">
                               <CheckCircle className="w-3 h-3" />
                               Match Found
@@ -265,20 +283,30 @@ export default function VerificationRequests() {
                               e.stopPropagation();
                               handleApprove(request.id);
                             }}
-                            className="flex-1 px-6 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 font-medium"
+                            disabled={isProcessing}
+                            className="flex-1 px-6 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:bg-green-400 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 font-medium"
                           >
-                            <CheckCircle className="w-5 h-5" />
-                            Approve
+                            {isProcessing ? (
+                              <Loader className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <CheckCircle className="w-5 h-5" />
+                            )}
+                            {isProcessing ? "Processing..." : "Approve"}
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleReject(request.id);
                             }}
-                            className="flex-1 px-6 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 font-medium"
+                            disabled={isProcessing}
+                            className="flex-1 px-6 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:bg-red-400 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 font-medium"
                           >
-                            <XCircle className="w-5 h-5" />
-                            Reject
+                            {isProcessing ? (
+                              <Loader className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <XCircle className="w-5 h-5" />
+                            )}
+                            {isProcessing ? "Processing..." : "Reject"}
                           </button>
                         </div>
                       )}
@@ -367,46 +395,46 @@ export default function VerificationRequests() {
 
           <div className="bg-white rounded-2xl border border-gray-200 max-h-[600px] overflow-y-auto">
             <div className="divide-y divide-gray-200">
-              {filteredAlumni.map((alumni) => (
-                <div
-                  key={alumni.id}
-                  className="p-4 hover:bg-blue-50 transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-semibold flex-shrink-0 text-sm">
-                      {alumni.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-900 mb-1">{alumni.name}</h4>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <p className="truncate">{alumni.email}</p>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
-                            {alumni.rollNumber}
-                          </span>
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
-                            {alumni.batch}
-                          </span>
-                          <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">
-                            {alumni.degree}
-                          </span>
+              {filteredAlumni.length === 0 ? (
+                <div className="p-12 text-center">
+                  <p className="text-gray-500">No matching records found</p>
+                </div>
+              ) : (
+                filteredAlumni.map((alumni) => (
+                  <div
+                    key={alumni.id}
+                    className="p-4 hover:bg-blue-50 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-semibold flex-shrink-0 text-sm">
+                        {alumni.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 mb-1">{alumni.name}</h4>
+                        <div className="space-y-1 text-sm text-gray-600">
+                          <p className="truncate">{alumni.email}</p>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
+                              {alumni.roll_number}
+                            </span>
+                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                              {alumni.batch}
+                            </span>
+                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">
+                              {alumni.degree}
+                            </span>
+                          </div>
+                          <p className="text-xs">{alumni.specialization}</p>
                         </div>
-                        <p className="text-xs">{alumni.specialization}</p>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-
-            {filteredAlumni.length === 0 && (
-              <div className="p-12 text-center">
-                <p className="text-gray-500">No matching records found</p>
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -27,11 +27,13 @@ import Newsletter from "./pages/alumni/Newsletter";
 import AlumniNotifications from "./pages/alumni/Notifications";
 
 import NotFound from "./pages/NotFound";
+import ErrorPage from "./pages/ErrorPage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: LandingPage,
+    errorElement: <ErrorPage />,
   },
   {
     path: "/auth/login",
@@ -68,6 +70,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin",
     Component: AdminLayout,
+    errorElement: <ErrorPage />,
     children: [
       { index: true, Component: AdminDashboard },
       { path: "alumni-management", Component: AlumniManagement },
@@ -81,6 +84,7 @@ export const router = createBrowserRouter([
   {
     path: "/alumni",
     Component: AlumniLayout,
+    errorElement: <ErrorPage />,
     children: [
       { index: true, Component: AlumniHome },
       { path: "post", Component: CreatePost },

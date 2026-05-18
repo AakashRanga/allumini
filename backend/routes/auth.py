@@ -1,5 +1,6 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 from db import execute_query
 from models import TABLE_ALUMNI_USERS
 from utils.validators import validate_registration_data
@@ -9,6 +10,7 @@ import random
 import string
 import os
 import json
+import uuid
 
 # Firebase Admin SDK
 import firebase_admin
@@ -467,7 +469,7 @@ def get_profile():
 
     try:
         user = execute_query(
-            f"SELECT id, name, email, contact_number, academic_details, specialization, awards, honorary_degrees, books_authored, other_accolades, previous_experience FROM {TABLE_ALUMNI_USERS} WHERE id=%s",
+            f"SELECT id, name, email, contact_number, academic_details, specialization, awards, honorary_degrees, books_authored, other_accolades, previous_experience, profile_image FROM {TABLE_ALUMNI_USERS} WHERE id=%s",
             (user_id,),
             fetch_one=True
         )
@@ -668,5 +670,99 @@ def reset_password():
 
     except Exception as e:
         print(f"Error in reset_password: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+# Profile images configuration
+PROFILE_IMAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'profile_images')
+os.makedirs(PROFILE_IMAGES_DIR, exist_ok=True)
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@auth_bp.route("/profile-image", methods=["POST"])
+def upload_profile_image():
+    user_id = get_authenticated_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if 'image' not in request.files:
+        return jsonify({"error": "No image file provided"}), 400
+
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Invalid file type. Allowed: png, jpg, jpeg, gif, webp"}), 400
+
+    try:
+        # Get existing profile image to delete
+        user = execute_query(
+            f"SELECT profile_image FROM {TABLE_ALUMNI_USERS} WHERE id=%s",
+            (user_id,),
+            fetch_one=True
+        )
+        old_image = user.get('profile_image') if user else None
+
+        # Generate unique filename
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{uuid.uuid4().hex}.{ext}"
+
+        # Save the file
+        file_path = os.path.join(PROFILE_IMAGES_DIR, unique_filename)
+        file.save(file_path)
+
+        # Delete old image if exists
+        if old_image:
+            old_image_path = os.path.join(PROFILE_IMAGES_DIR, old_image)
+            if os.path.exists(old_image_path):
+                os.remove(old_image_path)
+
+        # Update database
+        execute_query(
+            f"UPDATE {TABLE_ALUMNI_USERS} SET profile_image=%s, updated_at=CURRENT_TIMESTAMP WHERE id=%s",
+            (unique_filename, user_id)
+        )
+
+        return jsonify({
+            "message": "Profile image updated successfully",
+            "profile_image": unique_filename
+        }), 200
+
+    except Exception as e:
+        print(f"Error uploading profile image: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@auth_bp.route("/profile-image", methods=["DELETE"])
+def delete_profile_image():
+    user_id = get_authenticated_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        user = execute_query(
+            f"SELECT profile_image FROM {TABLE_ALUMNI_USERS} WHERE id=%s",
+            (user_id,),
+            fetch_one=True
+        )
+        old_image = user.get('profile_image') if user else None
+
+        if old_image:
+            old_image_path = os.path.join(PROFILE_IMAGES_DIR, old_image)
+            if os.path.exists(old_image_path):
+                os.remove(old_image_path)
+
+            execute_query(
+                f"UPDATE {TABLE_ALUMNI_USERS} SET profile_image=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=%s",
+                (user_id,)
+            )
+
+        return jsonify({"message": "Profile image deleted"}), 200
+
+    except Exception as e:
+        print(f"Error deleting profile image: {str(e)}")
         return jsonify({"error": str(e)}), 500
 

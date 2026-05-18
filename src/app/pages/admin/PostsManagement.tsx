@@ -1,46 +1,68 @@
-import { useState } from "react";
-import { CheckCircle, XCircle, Edit, Trash2, Trophy, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle, XCircle, Edit, Trash2, Trophy, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
 
-const postsData = [
-  {
-    id: 1,
-    type: "post",
-    author: "Sarah Johnson",
-    authorBatch: "2020",
-    content: "Excited to share that I've joined Google as a Senior Software Engineer! Grateful for the education and opportunities from our institution.",
-    timestamp: "2 hours ago",
-    status: "pending",
-  },
-  {
-    id: 2,
-    type: "achievement",
-    author: "Michael Chen",
-    authorBatch: "2021",
-    content: "Published my first research paper in Nature AI! Thank you to all my professors for their guidance.",
-    timestamp: "5 hours ago",
-    status: "approved",
-  },
-  {
-    id: 3,
-    type: "post",
-    author: "Emily Davis",
-    authorBatch: "2022",
-    content: "Just completed my certification in Cloud Architecture. The fundamentals I learned during UG were incredibly helpful!",
-    timestamp: "1 day ago",
-    status: "approved",
-  },
-];
+interface Achievement {
+  id: number;
+  type: string;
+  poster_name: string;
+  batch: string;
+  title: string;
+  description: string;
+  created_at: string;
+  is_blocked: number;
+}
 
 export default function PostsManagement() {
-  const [posts, setPosts] = useState(postsData);
+  const [posts, setPosts] = useState<Achievement[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | "posts" | "achievements">("all");
 
-  const handleApprove = (id: number) => {
-    setPosts(posts.map((post) => (post.id === id ? { ...post, status: "approved" } : post)));
+  const fetchAchievements = async () => {
+    try {
+      const response = await fetch("http://localhost:5555/posts/admin/achievements");
+      const data = await response.json();
+      if (data.success) {
+        // Map achievements to the shape expected by the UI
+        const mapped = data.data.map((item: any) => ({
+          ...item,
+          type: "achievement",
+        }));
+        setPosts(mapped);
+      }
+    } catch (error) {
+      console.error("Error fetching achievements:", error);
+    }
   };
 
-  const handleDelete = (id: number) => {
-    setPosts(posts.filter((post) => post.id !== id));
+  useEffect(() => {
+    fetchAchievements();
+  }, []);
+  const handleToggleBlock = async (id: number, currentStatus: number, type: string) => {
+    try {
+      const response = await fetch(`http://localhost:5555/posts/admin/${type}/${id}/block`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_blocked: !currentStatus }),
+      });
+      if (response.ok) {
+        fetchAchievements();
+      }
+    } catch (error) {
+      console.error("Error toggling block status:", error);
+    }
+  };
+
+  const handleDelete = async (id: number, type: string) => {
+    if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
+    try {
+      const response = await fetch(`http://localhost:5555/posts/admin/${type}/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setPosts(posts.filter((post) => post.id !== id));
+      }
+    } catch (error) {
+      console.error(`Error deleting ${type}:`, error);
+    }
   };
 
   const filteredPosts = posts.filter((post) => {
@@ -100,16 +122,15 @@ export default function PostsManagement() {
           >
             <div className="flex items-start gap-4 mb-4">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-semibold flex-shrink-0">
-                {post.author
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
+                {post.poster_name
+                  ? post.poster_name.split(" ").map((n) => n[0]).join("")
+                  : "A"}
               </div>
               <div className="flex-1">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="font-semibold text-gray-900">{post.author}</h3>
-                    <p className="text-sm text-gray-500">Batch {post.authorBatch} • {post.timestamp}</p>
+                    <h3 className="font-semibold text-gray-900">{post.poster_name}</h3>
+                    <p className="text-sm text-gray-500">{new Date(post.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span
@@ -133,36 +154,36 @@ export default function PostsManagement() {
                     </span>
                     <span
                       className={`px-3 py-1 rounded-lg text-xs font-medium ${
-                        post.status === "approved"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700"
+                        post.is_blocked
+                          ? "bg-red-100 text-red-700"
+                          : "bg-green-100 text-green-700"
                       }`}
                     >
-                      {post.status === "approved" ? "Approved" : "Pending"}
+                      {post.is_blocked ? "Blocked" : "Active"}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <p className="text-gray-700 mb-4 ml-16">{post.content}</p>
+            <h4 className="font-bold text-gray-900 ml-16 mb-1">{post.title}</h4>
+            <p className="text-gray-700 mb-4 ml-16">{post.description}</p>
 
             <div className="flex gap-3 ml-16">
-              {post.status === "pending" && (
-                <button
-                  onClick={() => handleApprove(post.id)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all flex items-center gap-2 text-sm font-medium"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Approve
-                </button>
-              )}
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2 text-sm font-medium">
-                <Edit className="w-4 h-4" />
-                Edit
+              <button
+                onClick={() => handleToggleBlock(post.id, post.is_blocked, post.type)}
+                className={`px-4 py-2 text-white rounded-xl transition-all flex items-center gap-2 text-sm font-medium ${
+                  post.is_blocked ? "bg-green-600 hover:bg-green-700" : "bg-orange-500 hover:bg-orange-600"
+                }`}
+              >
+                {post.is_blocked ? (
+                  <><ShieldCheck className="w-4 h-4" /> Unblock</>
+                ) : (
+                  <><ShieldAlert className="w-4 h-4" /> Block</>
+                )}
               </button>
               <button
-                onClick={() => handleDelete(post.id)}
+                onClick={() => handleDelete(post.id, post.type)}
                 className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all flex items-center gap-2 text-sm font-medium"
               >
                 <Trash2 className="w-4 h-4" />
