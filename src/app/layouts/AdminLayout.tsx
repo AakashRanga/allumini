@@ -13,9 +13,11 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Mail,
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { clearAuthSession, refreshAuthSessionActivity } from "@/lib/session";
+import { useSessionCheck } from "@/lib/hooks/useSessionCheck";
 import logoSrc from "../../imports/logo.png";
 
 const menuItems = [
@@ -24,6 +26,7 @@ const menuItems = [
   { path: "/admin/posts", label: "Posts & Achievements", icon: FileText },
   { path: "/admin/jobs", label: "Jobs", icon: Briefcase },
   { path: "/admin/messages", label: "Gurupadigam Messages", icon: MessageCircle },
+  { path: "/admin/newsletters", label: "Newsletters", icon: Mail },
   { path: "/admin/notifications", label: "Notifications", icon: Bell },
   { path: "/admin/alumni-management", label: "Alumni Management", icon: Users },
 
@@ -34,6 +37,9 @@ export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Check session validity on every screen
+  useSessionCheck("admin");
 
   // Mocked counts for badges
   const badgeCounts: Record<string, number> = {

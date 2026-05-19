@@ -3,13 +3,15 @@ from routes.auth import auth_bp
 from routes.verification import verification_bp
 from routes.posts import posts_bp
 from routes.gurupadigam import gurupadigam_bp
+from routes.newsletters import newsletter_bp
 from db import get_connection
 from models import (
     CREATE_ALUMNI_USERS_TABLE, TABLE_ALUMNI_USERS,
     CREATE_OVERALL_ALUMNI_TABLE, TABLE_OVERALL_ALUMNI,
     CREATE_JOBS_TABLE, TABLE_JOBS,
     CREATE_ACHIEVEMENTS_TABLE, TABLE_ACHIEVEMENTS,
-    CREATE_GURUPADIGAM_MESSAGES_TABLE, TABLE_GURUPADIGAM_MESSAGES
+    CREATE_GURUPADIGAM_MESSAGES_TABLE, TABLE_GURUPADIGAM_MESSAGES,
+    CREATE_NEWSLETTERS_TABLE, TABLE_NEWSLETTERS
 )
 import os
 
@@ -23,6 +25,10 @@ os.makedirs(PROFILE_IMAGES_DIR, exist_ok=True)
 GURUPADIGAM_ATTACHMENTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gurupadigam_attachments')
 os.makedirs(GURUPADIGAM_ATTACHMENTS_DIR, exist_ok=True)
 
+# Newsletter attachments configuration
+NEWSLETTER_ATTACHMENTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'newsletter_attachments')
+os.makedirs(NEWSLETTER_ATTACHMENTS_DIR, exist_ok=True)
+
 @app.route('/profile-images/<filename>')
 def serve_profile_image(filename):
     return send_from_directory(PROFILE_IMAGES_DIR, filename)
@@ -30,6 +36,10 @@ def serve_profile_image(filename):
 @app.route('/gurupadigam-attachments/<filename>')
 def serve_gurupadigam_attachment(filename):
     return send_from_directory(GURUPADIGAM_ATTACHMENTS_DIR, filename)
+
+@app.route('/newsletter-attachments/<filename>')
+def serve_newsletter_attachment(filename):
+    return send_from_directory(NEWSLETTER_ATTACHMENTS_DIR, filename)
 
 @app.before_request
 def handle_options():
@@ -155,6 +165,14 @@ def init_db():
             print(f"Adding missing column to {TABLE_GURUPADIGAM_MESSAGES}: {col_name}")
             cursor.execute(f"ALTER TABLE `{TABLE_GURUPADIGAM_MESSAGES}` ADD COLUMN {col_name} {col_def}")
 
+    # Create newsletters table if not exists
+    cursor.execute(CREATE_NEWSLETTERS_TABLE)
+    expected_columns = parse_columns_from_sql(CREATE_NEWSLETTERS_TABLE)
+    existing_columns = get_table_columns(cursor, TABLE_NEWSLETTERS)
+    for col_name, col_def in expected_columns.items():
+        if col_name not in existing_columns:
+            print(f"Adding missing column to {TABLE_NEWSLETTERS}: {col_name}")
+            cursor.execute(f"ALTER TABLE `{TABLE_NEWSLETTERS}` ADD COLUMN {col_name} {col_def}")
 
     # Create indexes for overall_alumni (if they don't exist)
     index_statements = [
@@ -185,6 +203,7 @@ app.register_blueprint(auth_bp, url_prefix="/auth")
 app.register_blueprint(verification_bp, url_prefix="/verification")
 app.register_blueprint(posts_bp, url_prefix="/posts")
 app.register_blueprint(gurupadigam_bp, url_prefix="/gurupadigam")
+app.register_blueprint(newsletter_bp, url_prefix="/newsletters")
 
 if __name__ == "__main__":
     init_db()

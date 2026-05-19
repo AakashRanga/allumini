@@ -14,6 +14,7 @@ import {
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import logoSrc from "../../imports/logo.png";
 import { getUserProfile, type UserProfile } from "@/lib/api";
+import { useSessionCheck } from "@/lib/hooks/useSessionCheck";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5555";
 
@@ -30,6 +31,9 @@ export default function AlumniLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  // Check session validity on every screen
+  useSessionCheck("alumni");
 
   useEffect(() => {
     async function fetchUserProfile() {

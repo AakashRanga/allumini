@@ -15,6 +15,7 @@ import PostsManagement from "./pages/admin/PostsManagement";
 import JobsManagement from "./pages/admin/JobsManagement";
 import GurupadigamMessages from "./pages/admin/GurupadigamMessages";
 import AdminNotifications from "./pages/admin/Notifications";
+import AdminNewsletters from "./pages/admin/Newsletters";
 
 import AlumniLayout from "./layouts/AlumniLayout";
 import AlumniHome from "./pages/alumni/Home";
@@ -78,6 +79,7 @@ export const router = createBrowserRouter([
       { path: "posts", Component: PostsManagement },
       { path: "jobs", Component: JobsManagement },
       { path: "messages", Component: GurupadigamMessages },
+      { path: "newsletters", Component: AdminNewsletters },
       { path: "notifications", Component: AdminNotifications },
     ],
   },

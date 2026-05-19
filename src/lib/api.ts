@@ -540,3 +540,180 @@ export async function deleteGurupadigamMessage(id: number) {
 
   return { success: true, data };
 }
+
+export type NewsletterItem = {
+  id: number;
+  admin_id: number;
+  admin_name?: string;
+  title: string;
+  description: string;
+  attachment_url: Array<{ url: string; name: string; type: string }>;
+  thumbnail: string | null;
+  is_published: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateNewsletterPayload = {
+  title: string;
+  description: string;
+  is_published: boolean;
+  attachments?: File[];
+  thumbnail?: File;
+};
+
+export type UpdateNewsletterPayload = {
+  title?: string;
+  description?: string;
+  is_published?: boolean;
+  attachments?: File[];
+  thumbnail?: File;
+};
+
+export async function getNewsletters(): Promise<ApiResponse<NewsletterItem[]>> {
+  return request<NewsletterItem[]>("/newsletters", { method: "GET" });
+}
+
+export async function getNewsletter(id: number): Promise<ApiResponse<NewsletterItem>> {
+  return request<NewsletterItem>(`/newsletters/${id}`, { method: "GET" });
+}
+
+export async function createNewsletter(payload: CreateNewsletterPayload) {
+  const authSession = getAuthSession();
+  if (!authSession) {
+    return { success: false, error: "Not authenticated", status: 401 };
+  }
+
+  const formData = new FormData();
+  formData.append("title", payload.title);
+  formData.append("description", payload.description);
+  formData.append("is_published", payload.is_published ? "1" : "0");
+
+  if (payload.attachments) {
+    payload.attachments.forEach((file) => {
+      formData.append("attachment", file);
+    });
+  }
+
+  if (payload.thumbnail) {
+    formData.append("thumbnail", payload.thumbnail);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/newsletters`, {
+      method: "POST",
+      headers: {
+        "X-Auth-User-Id": authSession.userId,
+        "X-Auth-Role": authSession.role,
+      },
+      body: formData,
+    });
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Network error",
+      status: 0,
+    };
+  }
+
+  const responseData = await response.json();
+
+  if (!response.ok) {
+    return {
+      success: false,
+      error: responseData?.error || response.statusText || "Unknown error",
+      status: response.status,
+    };
+  }
+
+  return { success: true, data: responseData };
+}
+
+export async function updateNewsletter(id: number, payload: UpdateNewsletterPayload) {
+  const authSession = getAuthSession();
+  if (!authSession) {
+    return { success: false, error: "Not authenticated", status: 401 };
+  }
+
+  const formData = new FormData();
+  if (payload.title !== undefined) formData.append("title", payload.title);
+  if (payload.description !== undefined) formData.append("description", payload.description);
+  if (payload.is_published !== undefined) formData.append("is_published", payload.is_published ? "1" : "0");
+
+  if (payload.attachments) {
+    payload.attachments.forEach((file) => {
+      formData.append("attachment", file);
+    });
+  }
+
+  if (payload.thumbnail) {
+    formData.append("thumbnail", payload.thumbnail);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/newsletters/${id}`, {
+      method: "PUT",
+      headers: {
+        "X-Auth-User-Id": authSession.userId,
+        "X-Auth-Role": authSession.role,
+      },
+      body: formData,
+    });
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Network error",
+      status: 0,
+    };
+  }
+
+  const responseData = await response.json();
+
+  if (!response.ok) {
+    return {
+      success: false,
+      error: responseData?.error || response.statusText || "Unknown error",
+      status: response.status,
+    };
+  }
+
+  return { success: true, data: responseData };
+}
+
+export async function deleteNewsletter(id: number) {
+  const authSession = getAuthSession();
+  if (!authSession) {
+    return { success: false, error: "Not authenticated", status: 401 };
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/newsletters/${id}`, {
+      method: "DELETE",
+      headers: {
+        "X-Auth-User-Id": authSession.userId,
+        "X-Auth-Role": authSession.role,
+      },
+    });
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Network error",
+      status: 0,
+    };
+  }
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    return {
+      success: false,
+      error: data?.error || response.statusText || "Unknown error",
+      status: response.status,
+    };
+  }
+
+  return { success: true, data };
+}
