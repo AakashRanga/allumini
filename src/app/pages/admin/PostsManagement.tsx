@@ -19,24 +19,42 @@ export default function PostsManagement() {
 
   const fetchAchievements = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/posts/admin/achievements`);
-      const data = await response.json();
-      if (data.success) {
-        // Map achievements to the shape expected by the UI
-        const mapped = data.data.map((item: any) => ({
+      const [achievementsRes, jobsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/posts/admin/achievements`).then((r) => r.json()),
+        fetch(`${API_BASE_URL}/posts/admin/jobs`).then((r) => r.json()),
+      ]);
+
+      let combined: any[] = [];
+
+      if (achievementsRes.success && achievementsRes.data) {
+        const mappedAchievements = achievementsRes.data.map((item: any) => ({
           ...item,
           type: "achievement",
         }));
-        setPosts(mapped);
+        combined = [...combined, ...mappedAchievements];
       }
+
+      if (jobsRes.success && jobsRes.data) {
+        const mappedJobs = jobsRes.data.map((item: any) => ({
+          ...item,
+          type: "job",
+          title: `${item.role} at ${item.company}`,
+        }));
+        combined = [...combined, ...mappedJobs];
+      }
+
+      // Sort by newest first
+      combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setPosts(combined);
     } catch (error) {
-      console.error("Error fetching achievements:", error);
+      console.error("Error fetching posts & achievements:", error);
     }
   };
 
   useEffect(() => {
     fetchAchievements();
   }, []);
+
   const handleToggleBlock = async (id: number, currentStatus: number, type: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/posts/admin/${type}/${id}/block`, {
@@ -59,7 +77,7 @@ export default function PostsManagement() {
         method: "DELETE",
       });
       if (response.ok) {
-        setPosts(posts.filter((post) => post.id !== id));
+        setPosts(posts.filter((post) => post.id !== id || post.type !== type));
       }
     } catch (error) {
       console.error(`Error deleting ${type}:`, error);
@@ -68,7 +86,7 @@ export default function PostsManagement() {
 
   const filteredPosts = posts.filter((post) => {
     if (activeTab === "all") return true;
-    return post.type === (activeTab === "posts" ? "post" : "achievement");
+    return post.type === (activeTab === "posts" ? "job" : "achievement");
   });
 
   return (
@@ -118,7 +136,7 @@ export default function PostsManagement() {
       <div className="space-y-4">
         {filteredPosts.map((post) => (
           <div
-            key={post.id}
+            key={`${post.type}-${post.id}`}
             className="bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-shadow"
           >
             <div className="flex items-start gap-4 mb-4">
@@ -149,7 +167,7 @@ export default function PostsManagement() {
                       ) : (
                         <>
                           <FileText className="w-3 h-3" />
-                          Post
+                          Job Post
                         </>
                       )}
                     </span>

@@ -18,6 +18,7 @@ import {
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { clearAuthSession, refreshAuthSessionActivity } from "@/lib/session";
 import { useSessionCheck } from "@/lib/hooks/useSessionCheck";
+import { apiCall } from "@/lib/api";
 import logoSrc from "../../imports/logo.png";
 
 const menuItems = [
@@ -41,12 +42,27 @@ export default function AdminLayout() {
   // Check session validity on every screen
   useSessionCheck("admin");
 
-  // Mocked counts for badges
+  const [pendingVerificationCount, setPendingVerificationCount] = useState(0);
+
+  useEffect(() => {
+    async function fetchCounts() {
+      try {
+        const response = await apiCall("/verification/requests", "GET");
+        if (response.success && response.data) {
+          const count = response.data.count ?? response.data.data?.length ?? 0;
+          setPendingVerificationCount(count);
+        }
+      } catch (err) {
+        console.error("Failed to fetch pending verification requests count:", err);
+      }
+    }
+    void fetchCounts();
+  }, [location.pathname]);
+
+  // Mocked counts for badges, filtered to notifications and dynamic verification requests
   const badgeCounts: Record<string, number> = {
-    "/admin/notifications": 12,
-    "/admin/verification": 5,
-    "/admin/jobs": 3,
-    "/admin/posts": 8,
+    "/admin/notifications": 2, // Matches the 2 unread notifications in AdminNotifications.tsx
+    "/admin/verification": pendingVerificationCount,
   };
 
   useEffect(() => {
