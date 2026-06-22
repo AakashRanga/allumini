@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from db import execute_query
 from models import TABLE_JOBS, TABLE_ACHIEVEMENTS, TABLE_ALUMNI_USERS
+from utils.validation import validate_job_post
 import json
 
 posts_bp = Blueprint("posts", __name__)
@@ -12,6 +13,15 @@ def create_job():
         return jsonify({"error": "Invalid JSON body"}), 400
 
     user_id = data.get("user_id")
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+
+    # Backend validation
+    is_valid, errors = validate_job_post(data)
+    if not is_valid:
+        first_error_msg = next(iter(errors.values()))
+        return jsonify({"error": first_error_msg, "errors": errors}), 400
+
     company = data.get("company", "").strip()
     role = data.get("role", "").strip()
     location = data.get("location", "").strip()
@@ -19,17 +29,17 @@ def create_job():
     salary = data.get("salary", "").strip()
     description = data.get("description", "").strip()
     requirements = data.get("requirements", "").strip()
-    apply_link = data.get("applyLink", "").strip()
-
-    if not all([user_id, company, role, location, description, apply_link]):
-        return jsonify({"error": "Missing required fields"}), 400
+    
+    # Optional applyLink
+    apply_link = data.get("applyLink", "")
+    apply_link_val = apply_link.strip() if apply_link else None
 
     try:
         execute_query(
             f"""INSERT INTO `{TABLE_JOBS}` 
             (user_id, company, role, location, job_type, salary, description, requirements, apply_link)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-            (user_id, company, role, location, job_type, salary, description, requirements, apply_link)
+            (user_id, company, role, location, job_type, salary, description, requirements, apply_link_val)
         )
         return jsonify({"success": True, "message": "Job posted successfully"}), 201
     except Exception as e:
@@ -149,7 +159,7 @@ def update_job(job_id):
         return jsonify({"error": "Invalid JSON body"}), 400
 
     existing = execute_query(
-        f"SELECT user_id FROM `{TABLE_JOBS}` WHERE id=%s",
+        f"SELECT * FROM `{TABLE_JOBS}` WHERE id=%s",
         (job_id,),
         fetch_one=True
     )
@@ -157,6 +167,20 @@ def update_job(job_id):
         return jsonify({"error": "Job not found"}), 404
     if existing.get("user_id") != user_id:
         return jsonify({"error": "Unauthorized"}), 403
+
+    # Backend validation
+    full_job_data = {
+        "company": data.get("company", existing.get("company", "")),
+        "role": data.get("role", existing.get("role", "")),
+        "location": data.get("location", existing.get("location", "")),
+        "salary": data.get("salary", existing.get("salary", "")),
+        "description": data.get("description", existing.get("description", "")),
+        "applyLink": data.get("apply_link", data.get("applyLink", existing.get("apply_link", "")))
+    }
+    is_valid, errors = validate_job_post(full_job_data)
+    if not is_valid:
+        first_error_msg = next(iter(errors.values()))
+        return jsonify({"error": first_error_msg, "errors": errors}), 400
 
     allowed_fields = ["company", "role", "location", "job_type", "salary", "description", "requirements", "apply_link"]
     updates = []

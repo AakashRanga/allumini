@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Trophy, Upload, ArrowLeft, Briefcase, MapPin, DollarSign } from "lucide-react";
+import { Trophy, Upload, ArrowLeft, Briefcase, MapPin, IndianRupee } from "lucide-react";
 import { getAuthSession } from "@/lib/session";
+import { validateJobPost, JobValidationError } from "@/utils/validation";
 
 export default function CreatePost() {
   const navigate = useNavigate();
@@ -28,8 +29,19 @@ export default function CreatePost() {
     return session ? parseInt(session.userId) : 1;
   };
 
+  const [jobErrors, setJobErrors] = useState<JobValidationError>({});
+
   const handleJobSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Frontend validation
+    const validation = validateJobPost(jobFormData);
+    if (!validation.isValid) {
+      setJobErrors(validation.errors);
+      return;
+    }
+    setJobErrors({});
+
     try {
       const response = await fetch("http://localhost:5555/posts/job", {
         method: "POST",
@@ -39,7 +51,8 @@ export default function CreatePost() {
       if (response.ok) {
         navigate("/alumni/jobs");
       } else {
-        alert("Failed to post job");
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to post job");
       }
     } catch (error) {
       console.error(error);
@@ -145,30 +158,32 @@ export default function CreatePost() {
             <div className="grid md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Name <span className="text-red-500">*</span>
+                  Company / Hospital Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={jobFormData.company}
                   onChange={(e) => setJobFormData({ ...jobFormData, company: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A66C2] focus:border-transparent"
-                  placeholder="e.g., Google, Microsoft, Startup Inc"
+                  placeholder="Enter company or hospital name"
                   required
                 />
+                {jobErrors.company && <p className="text-xs text-red-500 mt-1">{jobErrors.company}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Job Title <span className="text-red-500">*</span>
+                  Job Title / Specialization <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={jobFormData.role}
                   onChange={(e) => setJobFormData({ ...jobFormData, role: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A66C2] focus:border-transparent"
-                  placeholder="e.g., Senior Software Engineer"
+                  placeholder="Enter job title or specialization"
                   required
                 />
+                {jobErrors.role && <p className="text-xs text-red-500 mt-1">{jobErrors.role}</p>}
               </div>
             </div>
 
@@ -184,10 +199,11 @@ export default function CreatePost() {
                     value={jobFormData.location}
                     onChange={(e) => setJobFormData({ ...jobFormData, location: e.target.value })}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A66C2] focus:border-transparent"
-                    placeholder="San Francisco, CA"
+                    placeholder="Enter location"
                     required
                   />
                 </div>
+                {jobErrors.location && <p className="text-xs text-red-500 mt-1">{jobErrors.location}</p>}
               </div>
 
               <div>
@@ -213,16 +229,17 @@ export default function CreatePost() {
                   Salary (LPA) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <DollarSign className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <IndianRupee className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={jobFormData.salary}
                     onChange={(e) => setJobFormData({ ...jobFormData, salary: e.target.value })}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A66C2] focus:border-transparent"
-                    placeholder="10-15 LPA"
+                    placeholder="Enter salary (e.g., 10 or 12.5)"
                     required
                   />
                 </div>
+                {jobErrors.salary && <p className="text-xs text-red-500 mt-1">{jobErrors.salary}</p>}
               </div>
             </div>
 
@@ -235,9 +252,10 @@ export default function CreatePost() {
                 onChange={(e) => setJobFormData({ ...jobFormData, description: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A66C2] focus:border-transparent resize-none"
                 rows={4}
-                placeholder="Describe the role, responsibilities, and what makes this opportunity great..."
+                placeholder="Enter job description"
                 required
               />
+              {jobErrors.description && <p className="text-xs text-red-500 mt-1">{jobErrors.description}</p>}
             </div>
 
             <div>
@@ -249,22 +267,22 @@ export default function CreatePost() {
                 onChange={(e) => setJobFormData({ ...jobFormData, requirements: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A66C2] focus:border-transparent resize-none"
                 rows={3}
-                placeholder="List key requirements, skills, experience needed..."
+                placeholder="Enter requirements & qualifications"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Application Link <span className="text-red-500">*</span>
+                Application Link
               </label>
               <input
                 type="url"
                 value={jobFormData.applyLink}
                 onChange={(e) => setJobFormData({ ...jobFormData, applyLink: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0A66C2] focus:border-transparent"
-                placeholder="https://company.com/careers/apply"
-                required
+                placeholder="Enter application link (optional)"
               />
+              {jobErrors.applyLink && <p className="text-xs text-red-500 mt-1">{jobErrors.applyLink}</p>}
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">

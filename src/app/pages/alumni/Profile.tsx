@@ -17,6 +17,7 @@ import {
   X,
   Upload,
   ImageIcon,
+  IndianRupee,
 } from "lucide-react";
 import {
   getUserProfile,
@@ -33,6 +34,7 @@ import {
   type UserProfile,
   type AcademicDetail,
 } from "@/lib/api";
+import { validateJobPost, JobValidationError } from "@/utils/validation";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5555";
 
@@ -70,6 +72,7 @@ export default function Profile() {
   const [myAchievements, setMyAchievements] = useState<AchievementPost[]>([]);
   const [editingJobId, setEditingJobId] = useState<number | null>(null);
   const [editingAchievementId, setEditingAchievementId] = useState<number | null>(null);
+  const [profileJobErrors, setProfileJobErrors] = useState<JobValidationError>({});
   const [jobDraft, setJobDraft] = useState<Partial<JobPost>>({
     company: "",
     role: "",
@@ -669,6 +672,7 @@ export default function Profile() {
                           onClick={() => {
                             setEditingJobId(job.id);
                             setEditingAchievementId(null);
+                            setProfileJobErrors({});
                             setJobDraft({
                               company: job.company,
                               role: job.role,
@@ -689,30 +693,81 @@ export default function Profile() {
                       {editingJobId === job.id ? (
                         <div className="mt-5 grid gap-4">
                           <div className="grid gap-4 sm:grid-cols-2">
-                            <FieldInput label="Company" value={jobDraft.company || ""} disabled={false} onChange={(value) => setJobDraft((prev) => ({ ...prev, company: value }))} />
-                            <FieldInput label="Role" value={jobDraft.role || ""} disabled={false} onChange={(value) => setJobDraft((prev) => ({ ...prev, role: value }))} />
+                            <FieldInput
+                              label="Company / Hospital"
+                              value={jobDraft.company || ""}
+                              disabled={false}
+                              onChange={(value) => setJobDraft((prev) => ({ ...prev, company: value }))}
+                              placeholder="Enter company or hospital name"
+                              error={profileJobErrors.company}
+                            />
+                            <FieldInput
+                              label="Role / Specialization"
+                              value={jobDraft.role || ""}
+                              disabled={false}
+                              onChange={(value) => setJobDraft((prev) => ({ ...prev, role: value }))}
+                              placeholder="Enter job title or specialization"
+                              error={profileJobErrors.role}
+                            />
                           </div>
                           <div className="grid gap-4 sm:grid-cols-2">
-                            <FieldInput label="Location" value={jobDraft.location || ""} disabled={false} onChange={(value) => setJobDraft((prev) => ({ ...prev, location: value }))} />
-                            <FieldInput label="Job type" value={jobDraft.job_type || ""} disabled={false} onChange={(value) => setJobDraft((prev) => ({ ...prev, job_type: value }))} />
+                            <FieldInput
+                              label="Location"
+                              value={jobDraft.location || ""}
+                              disabled={false}
+                              onChange={(value) => setJobDraft((prev) => ({ ...prev, location: value }))}
+                              placeholder="Enter location"
+                              error={profileJobErrors.location}
+                            />
+                            <div>
+                              <label className="block text-sm font-medium text-slate-500 mb-2">Job type</label>
+                              <select
+                                value={jobDraft.job_type || ""}
+                                onChange={(e) => setJobDraft((prev) => ({ ...prev, job_type: e.target.value }))}
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                              >
+                                <option value="Full-time">Full-time</option>
+                                <option value="Part-time">Part-time</option>
+                                <option value="Contract">Contract</option>
+                                <option value="Internship">Internship</option>
+                                <option value="Remote">Remote</option>
+                              </select>
+                            </div>
                           </div>
                           <div className="grid gap-4 sm:grid-cols-2">
-                            <FieldInput label="Salary" value={jobDraft.salary || ""} disabled={false} onChange={(value) => setJobDraft((prev) => ({ ...prev, salary: value }))} />
-                            <FieldInput label="Apply link" value={jobDraft.apply_link || ""} disabled={false} onChange={(value) => setJobDraft((prev) => ({ ...prev, apply_link: value }))} />
+                            <FieldInput
+                              label="Salary (LPA)"
+                              value={jobDraft.salary || ""}
+                              disabled={false}
+                              onChange={(value) => setJobDraft((prev) => ({ ...prev, salary: value }))}
+                              placeholder="Enter salary (e.g., 10 or 12.5)"
+                              error={profileJobErrors.salary}
+                            />
+                            <FieldInput
+                              label="Apply link"
+                              value={jobDraft.apply_link || ""}
+                              disabled={false}
+                              onChange={(value) => setJobDraft((prev) => ({ ...prev, apply_link: value }))}
+                              placeholder="Enter application link (optional)"
+                              error={profileJobErrors.applyLink}
+                            />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-slate-500 mb-2">Description</label>
                             <textarea
                               value={jobDraft.description || ""}
                               onChange={(event) => setJobDraft((prev) => ({ ...prev, description: event.target.value }))}
+                              placeholder="Enter job description"
                               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                             />
+                            {profileJobErrors.description && <p className="text-xs text-red-500 mt-1">{profileJobErrors.description}</p>}
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-slate-500 mb-2">Requirements</label>
                             <textarea
                               value={jobDraft.requirements || ""}
                               onChange={(event) => setJobDraft((prev) => ({ ...prev, requirements: event.target.value }))}
+                              placeholder="Enter requirements & qualifications"
                               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                             />
                           </div>
@@ -720,6 +775,20 @@ export default function Profile() {
                             <button
                               type="button"
                               onClick={async () => {
+                                const validation = validateJobPost({
+                                  company: jobDraft.company || "",
+                                  role: jobDraft.role || "",
+                                  location: jobDraft.location || "",
+                                  salary: jobDraft.salary || "",
+                                  description: jobDraft.description || "",
+                                  applyLink: jobDraft.apply_link || "",
+                                });
+                                if (!validation.isValid) {
+                                  setProfileJobErrors(validation.errors);
+                                  return;
+                                }
+                                setProfileJobErrors({});
+
                                 const response = await updateJob(job.id, {
                                   company: jobDraft.company,
                                   role: jobDraft.role,
@@ -953,11 +1022,15 @@ function FieldInput({
   value,
   disabled,
   onChange,
+  placeholder,
+  error,
 }: {
   label: string;
   value: string;
   disabled: boolean;
   onChange: (value: string) => void;
+  placeholder?: string;
+  error?: string;
 }) {
   return (
     <div>
@@ -966,8 +1039,10 @@ function FieldInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled}
+        placeholder={placeholder}
         className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100"
       />
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );
 }

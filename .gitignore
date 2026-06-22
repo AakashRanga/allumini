@@ -5,7 +5,7 @@ credentials.json
 token.json
 # frontend files
 node_modules/
-firebase.json
+firebase.js
 serviceAccountKey.json
 
 __pycache__/

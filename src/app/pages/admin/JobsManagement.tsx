@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Plus, Edit, Trash2, Briefcase, MapPin, DollarSign, ExternalLink, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Plus, Edit, Trash2, Briefcase, MapPin, IndianRupee, ExternalLink, ShieldAlert, ShieldCheck } from "lucide-react";
 import { getAuthSession } from "@/lib/session";
+import { validateJobPost, JobValidationError, formatSalary } from "@/utils/validation";
 
 interface Job {
   id: number;
@@ -31,6 +32,8 @@ export default function JobsManagement() {
     applyLink: "",
   });
 
+  const [formErrors, setFormErrors] = useState<JobValidationError>({});
+
   const fetchJobs = async () => {
     try {
       const response = await fetch("http://localhost:5555/posts/admin/jobs");
@@ -49,6 +52,15 @@ export default function JobsManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Frontend validation
+    const validation = validateJobPost(formData);
+    if (!validation.isValid) {
+      setFormErrors(validation.errors);
+      return;
+    }
+    setFormErrors({});
+
     try {
       const session = getAuthSession();
       const userId = session?.userId || "1";
@@ -75,7 +87,8 @@ export default function JobsManagement() {
         });
         setShowForm(false);
       } else {
-        alert("Failed to post job");
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to post job");
       }
     } catch (error) {
       console.error("Error posting job:", error);
@@ -133,24 +146,28 @@ export default function JobsManagement() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Company / Hospital Name</label>
                 <input
                   type="text"
                   value={formData.company}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  placeholder="Enter company or hospital name"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
                 />
+                {formErrors.company && <p className="text-xs text-red-500 mt-1">{formErrors.company}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Job Role</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Job Role / Specialization</label>
                 <input
                   type="text"
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  placeholder="Enter job title or specialization"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
                 />
+                {formErrors.role && <p className="text-xs text-red-500 mt-1">{formErrors.role}</p>}
               </div>
             </div>
 
@@ -161,9 +178,11 @@ export default function JobsManagement() {
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="Enter location"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
                 />
+                {formErrors.location && <p className="text-xs text-red-500 mt-1">{formErrors.location}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
@@ -176,19 +195,34 @@ export default function JobsManagement() {
                   <option value="Part-time">Part-time</option>
                   <option value="Contract">Contract</option>
                   <option value="Internship">Internship</option>
+                  <option value="Remote">Remote</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Salary Range</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Salary (LPA)</label>
                 <input
                   type="text"
                   value={formData.salary}
                   onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="$100k - $150k"
+                  placeholder="Enter salary (e.g., 10 or 12.5)"
                   required
                 />
+                {formErrors.salary && <p className="text-xs text-red-500 mt-1">{formErrors.salary}</p>}
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Enter job description"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                rows={4}
+                required
+              />
+              {formErrors.description && <p className="text-xs text-red-500 mt-1">{formErrors.description}</p>}
             </div>
 
             <div>
@@ -198,8 +232,7 @@ export default function JobsManagement() {
                 onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                 rows={3}
-                placeholder="List skills, experience, or certifications..."
-                required
+                placeholder="Enter requirements & qualifications"
               />
             </div>
 
@@ -210,9 +243,9 @@ export default function JobsManagement() {
                 value={formData.applyLink}
                 onChange={(e) => setFormData({ ...formData, applyLink: e.target.value })}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="https://..."
-                required
+                placeholder="Enter application link (optional)"
               />
+              {formErrors.applyLink && <p className="text-xs text-red-500 mt-1">{formErrors.applyLink}</p>}
             </div>
 
             <div className="flex gap-3">
@@ -254,8 +287,8 @@ export default function JobsManagement() {
                       {job.location}
                     </span>
                     <span className="flex items-center gap-1">
-                      <DollarSign className="w-4 h-4" />
-                      {job.salary}
+                      <IndianRupee className="w-4 h-4" />
+                      {formatSalary(job.salary)}
                     </span>
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
                       {job.job_type}

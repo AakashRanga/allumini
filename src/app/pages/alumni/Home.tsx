@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Trophy, Briefcase, Sparkles, MapPin, DollarSign, ExternalLink, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Trophy, Briefcase, Sparkles, MapPin, IndianRupee, ExternalLink, Loader2 } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { getJobs, getAchievements, JobPost, AchievementPost } from "@/lib/api";
+import { formatSalary } from "@/utils/validation";
 
 type FeedItem = {
   id: number;
@@ -10,6 +11,7 @@ type FeedItem = {
   batch: string;
   avatar: string;
   time: string;
+  createdAt: string;
   company?: string;
   role?: string;
   location?: string;
@@ -82,6 +84,7 @@ export default function AlumniHome() {
               batch: "",
               avatar: getInitials(job.poster_name || "Unknown"),
               time: timeAgo(job.created_at),
+              createdAt: job.created_at,
               company: job.company,
               role: job.role,
               location: job.location,
@@ -104,6 +107,7 @@ export default function AlumniHome() {
               batch: "",
               avatar: getInitials(achievement.poster_name || "Unknown"),
               time: timeAgo(achievement.created_at),
+              createdAt: achievement.created_at,
               title: achievement.title,
               content: achievement.description,
               image: achievement.image_url,
@@ -113,8 +117,8 @@ export default function AlumniHome() {
           });
         }
 
-        // Sort by time (newest first)
-        items.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+        // Sort by raw timestamp (newest first)
+        items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setFeedData(items);
       } catch (err) {
         setError("Failed to load feed data");
@@ -200,7 +204,7 @@ export default function AlumniHome() {
         <div className="space-y-6">
           {filteredFeed.map((item) => (
             <div
-              key={item.id}
+              key={`${item.type}-${item.id}`}
               className={`bg-white rounded-2xl p-6 border-2 hover:shadow-lg transition-all ${
                 item.type === "achievement" ? "border-amber-200" : "border-blue-200"
               }`}
@@ -250,8 +254,8 @@ export default function AlumniHome() {
                       )}
                       {item.salary && (
                         <span className="flex items-center gap-1 text-sm text-gray-600">
-                          <DollarSign className="w-4 h-4" />
-                          {item.salary}
+                          <IndianRupee className="w-4 h-4" />
+                          {formatSalary(item.salary)}
                         </span>
                       )}
                       {item.jobType && (
