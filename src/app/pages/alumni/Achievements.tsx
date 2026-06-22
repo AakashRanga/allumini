@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Trophy, Calendar, Heart, MessageCircle } from "lucide-react";
+import { Trophy, Calendar } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Achievement {
   id: number;
@@ -18,7 +19,7 @@ export default function ViewAchievements() {
   useEffect(() => {
     const fetchAchievements = async () => {
       try {
-        const response = await fetch("http://localhost:5555/posts/achievements");
+        const response = await fetch(`${API_BASE_URL}/posts/achievements`);
         const data = await response.json();
         if (Array.isArray(data)) {
           setAchievements(data);
@@ -79,7 +80,7 @@ export default function ViewAchievements() {
               <img src={achievement.image_url} alt="Achievement" className="w-full max-h-96 object-cover rounded-xl mb-4" />
             )}
 
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+            <div className="flex items-center pt-4 border-t border-gray-100">
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Calendar className="w-4 h-4" />
                 {new Date(achievement.created_at).toLocaleDateString("en-US", {
@@ -87,16 +88,6 @@ export default function ViewAchievements() {
                   day: "numeric",
                   year: "numeric",
                 })}
-              </div>
-              <div className="flex items-center gap-6">
-                <button className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors">
-                  <Heart className="w-5 h-5" />
-                  <span className="text-sm font-medium">0</span>
-                </button>
-                <button className="flex items-center gap-2 text-gray-600 hover:text-[#0A66C2] transition-colors">
-                  <MessageCircle className="w-5 h-5" />
-                  <span className="text-sm font-medium">0</span>
-                </button>
               </div>
             </div>
           </div>

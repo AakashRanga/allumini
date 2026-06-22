@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, Edit, Trash2, Briefcase, MapPin, IndianRupee, ExternalLink, ShieldAlert, ShieldCheck } from "lucide-react";
 import { getAuthSession } from "@/lib/session";
 import { validateJobPost, JobValidationError, formatSalary } from "@/utils/validation";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Job {
   id: number;
@@ -36,7 +37,7 @@ export default function JobsManagement() {
 
   const fetchJobs = async () => {
     try {
-      const response = await fetch("http://localhost:5555/posts/admin/jobs");
+      const response = await fetch(`${API_BASE_URL}/posts/admin/jobs`);
       const data = await response.json();
       if (data.success) {
         setJobs(data.data);
@@ -64,7 +65,7 @@ export default function JobsManagement() {
     try {
       const session = getAuthSession();
       const userId = session?.userId || "1";
-      const response = await fetch("http://localhost:5555/posts/job", {
+      const response = await fetch(`${API_BASE_URL}/posts/job`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,7 +99,7 @@ export default function JobsManagement() {
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this job?")) return;
     try {
-      const response = await fetch(`http://localhost:5555/posts/admin/job/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/posts/admin/job/${id}`, {
         method: "DELETE",
       });
       if (response.ok) {
@@ -111,7 +112,7 @@ export default function JobsManagement() {
 
   const handleToggleBlock = async (id: number, currentStatus: number) => {
     try {
-      const response = await fetch(`http://localhost:5555/posts/admin/job/${id}/block`, {
+      const response = await fetch(`${API_BASE_URL}/posts/admin/job/${id}/block`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_blocked: !currentStatus }),

@@ -3,7 +3,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 from db import execute_query
 from models import TABLE_ALUMNI_USERS
-from utils.validators import validate_registration_data
+from utils.validators import validate_registration_data, validate_profile_data
 from utils.email import send_otp_email, send_password_reset_email, generate_reset_token
 from datetime import datetime, timedelta
 import random
@@ -503,6 +503,10 @@ def update_profile():
     if not isinstance(data, dict):
         return jsonify({"error": "Invalid JSON body"}), 400
 
+    validated = validate_profile_data(data)
+    if isinstance(validated, str):
+        return jsonify({"error": validated}), 400
+
     allowed_fields = [
         "name",
         "contact_number",
@@ -527,10 +531,10 @@ def update_profile():
     }
 
     for field in allowed_fields:
-        if field not in data:
+        if field not in validated:
             continue
 
-        value = data.get(field)
+        value = validated.get(field)
         if field in json_fields:
             if value is None or value == []:
                 value = None

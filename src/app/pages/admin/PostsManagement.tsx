@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle, XCircle, Edit, Trash2, Trophy, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Achievement {
   id: number;
@@ -18,7 +19,7 @@ export default function PostsManagement() {
 
   const fetchAchievements = async () => {
     try {
-      const response = await fetch("http://localhost:5555/posts/admin/achievements");
+      const response = await fetch(`${API_BASE_URL}/posts/admin/achievements`);
       const data = await response.json();
       if (data.success) {
         // Map achievements to the shape expected by the UI
@@ -38,7 +39,7 @@ export default function PostsManagement() {
   }, []);
   const handleToggleBlock = async (id: number, currentStatus: number, type: string) => {
     try {
-      const response = await fetch(`http://localhost:5555/posts/admin/${type}/${id}/block`, {
+      const response = await fetch(`${API_BASE_URL}/posts/admin/${type}/${id}/block`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_blocked: !currentStatus }),
@@ -54,7 +55,7 @@ export default function PostsManagement() {
   const handleDelete = async (id: number, type: string) => {
     if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
     try {
-      const response = await fetch(`http://localhost:5555/posts/admin/${type}/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/posts/admin/${type}/${id}`, {
         method: "DELETE",
       });
       if (response.ok) {

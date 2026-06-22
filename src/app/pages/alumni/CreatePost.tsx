@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Trophy, Upload, ArrowLeft, Briefcase, MapPin, IndianRupee } from "lucide-react";
 import { getAuthSession } from "@/lib/session";
 import { validateJobPost, JobValidationError } from "@/utils/validation";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function CreatePost() {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export default function CreatePost() {
     setJobErrors({});
 
     try {
-      const response = await fetch("http://localhost:5555/posts/job", {
+      const response = await fetch(`${API_BASE_URL}/posts/job`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...jobFormData, user_id: getUserId() }),
@@ -84,7 +85,7 @@ export default function CreatePost() {
   const handleAchievementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:5555/posts/achievement", {
+      const response = await fetch(`${API_BASE_URL}/posts/achievement`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

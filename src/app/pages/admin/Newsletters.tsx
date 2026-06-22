@@ -6,10 +6,9 @@ import {
   updateNewsletter,
   deleteNewsletter,
   type NewsletterItem,
+  API_BASE_URL,
 } from "@/lib/api";
 import DocumentViewer from "../../components/DocumentViewer";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5555";
 
 export default function Newsletters() {
   const [newsletters, setNewsletters] = useState<NewsletterItem[]>([]);

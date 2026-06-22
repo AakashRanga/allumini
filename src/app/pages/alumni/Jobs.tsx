@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Briefcase, MapPin, IndianRupee, ExternalLink, Clock, Filter, RotateCcw } from "lucide-react";
 import SearchableDropdown from "../../components/SearchableDropdown";
 import { formatSalary } from "@/utils/validation";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Job {
   id: number;
@@ -31,7 +32,7 @@ export default function ViewJobs() {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await fetch("http://localhost:5555/posts/jobs");
+        const response = await fetch(`${API_BASE_URL}/posts/jobs`);
         const data = await response.json();
         if (Array.isArray(data)) {
           setJobs(data);

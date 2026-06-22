@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Trophy, Briefcase, Sparkles, MapPin, IndianRupee, ExternalLink, Loader2 } from "lucide-react";
+import { Trophy, Briefcase, Sparkles, MapPin, IndianRupee, ExternalLink, Loader2 } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { getJobs, getAchievements, JobPost, AchievementPost } from "@/lib/api";
 import { formatSalary } from "@/utils/validation";
@@ -281,17 +281,6 @@ export default function AlumniHome() {
                       </div>
                     )}
                   </div>
-
-                  <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
-                    <button className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors">
-                      <Heart className="w-5 h-5" />
-                      <span className="text-sm font-medium">{item.likes}</span>
-                    </button>
-                    <button className="flex items-center gap-2 text-gray-600 hover:text-[#0A66C2] transition-colors">
-                      <MessageCircle className="w-5 h-5" />
-                      <span className="text-sm font-medium">{item.comments}</span>
-                    </button>
-                  </div>
                 </>
               ) : (
                 <>
@@ -307,17 +296,6 @@ export default function AlumniHome() {
                         />
                       </div>
                     )}
-                  </div>
-
-                  <div className="flex items-center gap-6 pt-3 border-t border-gray-100">
-                    <button className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors">
-                      <Heart className="w-5 h-5" />
-                      <span className="text-sm font-medium">{item.likes}</span>
-                    </button>
-                    <button className="flex items-center gap-2 text-gray-600 hover:text-[#0A66C2] transition-colors">
-                      <MessageCircle className="w-5 h-5" />
-                      <span className="text-sm font-medium">{item.comments}</span>
-                    </button>
                   </div>
                 </>
               )}

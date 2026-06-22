@@ -33,10 +33,10 @@ import {
   type ProfileExperienceEntry,
   type UserProfile,
   type AcademicDetail,
+  API_BASE_URL,
 } from "@/lib/api";
-import { validateJobPost, JobValidationError } from "@/utils/validation";
+import { validateJobPost, JobValidationError, validateUserProfile, ProfileValidationError } from "@/utils/validation";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5555";
 
 const emptyExperience: ProfileExperienceEntry = {
   company: "",
@@ -67,6 +67,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [profileErrors, setProfileErrors] = useState<ProfileValidationError>({});
 
   const [myJobs, setMyJobs] = useState<JobPost[]>([]);
   const [myAchievements, setMyAchievements] = useState<AchievementPost[]>([]);
@@ -262,7 +263,25 @@ export default function Profile() {
     setError("");
     setMessage("");
 
+    const validation = validateUserProfile({
+      name: profileData.name || "",
+      contact_number: profileData.contact_number || "",
+      specialization: profileData.specialization || "",
+      previous_experience: profileData.previous_experience || [],
+    });
+
+    if (!validation.isValid) {
+      setProfileErrors(validation.errors);
+      setError("Please fix the validation errors before saving.");
+      setSaving(false);
+      return;
+    }
+    setProfileErrors({});
+
     const payload = {
+      name: profileData.name,
+      contact_number: (profileData.contact_number || "").replace(/\D/g, ""),
+      specialization: profileData.specialization,
       awards: profileData.awards.filter(Boolean),
       honorary_degrees: profileData.honorary_degrees.filter(Boolean),
       books_authored: profileData.books_authored.filter(Boolean),
@@ -347,32 +366,68 @@ export default function Profile() {
               </>
             )}
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-4xl font-semibold mb-3 leading-tight">{displayName}</h3>
-            <p className="text-blue-100 text-lg mb-5 max-w-2xl">{profileSubtitle}</p>
-            <div className="flex flex-wrap gap-3">
-              {currentRole ? (
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white shadow-sm backdrop-blur-sm">
-                  <Briefcase className="w-4 h-4 text-white" />
-                  {currentRole}
-                </span>
-              ) : null}
-              {currentCompany ? (
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white shadow-sm backdrop-blur-sm">
-                  <FileText className="w-4 h-4 text-white" />
-                  {currentCompany}
-                </span>
-              ) : null}
-              {batchYear ? (
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white shadow-sm backdrop-blur-sm">
-                  <Calendar className="w-4 h-4 text-white" />
-                  Batch {batchYear}
-                </span>
-              ) : null}
-            </div>
+          <div className="flex-1 min-w-0 w-full">
+            {isEditing ? (
+              <div className="space-y-4 max-w-md">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-blue-100 mb-1.5">Full Name</label>
+                  <input
+                    type="text"
+                    value={profileData.name || ""}
+                    onChange={(e) => setProfileData((prev) => ({ ...prev, name: e.target.value }))}
+                    className="w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-white/40 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                    placeholder="Enter your name"
+                  />
+                  {profileErrors.name && (
+                    <p className="text-xs text-red-200 font-bold mt-1.5">{profileErrors.name}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-blue-100 mb-1.5">Specialization</label>
+                  <input
+                    type="text"
+                    value={profileData.specialization || ""}
+                    onChange={(e) => setProfileData((prev) => ({ ...prev, specialization: e.target.value }))}
+                    className="w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-white/40 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                    placeholder="Enter specialization"
+                  />
+                  {profileErrors.specialization && (
+                    <p className="text-xs text-red-200 font-bold mt-1.5">{profileErrors.specialization}</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-4xl font-semibold mb-3 leading-tight">{displayName}</h3>
+                <p className="text-blue-100 text-lg mb-5 max-w-2xl">{profileSubtitle}</p>
+                <div className="flex flex-wrap gap-3">
+                  {currentRole ? (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white shadow-sm backdrop-blur-sm">
+                      <Briefcase className="w-4 h-4 text-white" />
+                      {currentRole}
+                    </span>
+                  ) : null}
+                  {currentCompany ? (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white shadow-sm backdrop-blur-sm">
+                      <FileText className="w-4 h-4 text-white" />
+                      {currentCompany}
+                    </span>
+                  ) : null}
+                  {batchYear ? (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white shadow-sm backdrop-blur-sm">
+                      <Calendar className="w-4 h-4 text-white" />
+                      Batch {batchYear}
+                    </span>
+                  ) : null}
+                </div>
+              </>
+            )}
           </div>
           <button
-            onClick={() => setIsEditing((prev) => !prev)}
+            onClick={() => {
+              setIsEditing((prev) => !prev);
+              setProfileErrors({});
+            }}
             className="rounded-2xl border border-white/30 bg-white/15 px-4 py-3 text-sm font-semibold text-white hover:bg-white/25 transition"
           >
             <span className="inline-flex items-center gap-2">
@@ -483,18 +538,21 @@ export default function Profile() {
                                 value={experience.company}
                                 disabled={!isEditing}
                                 onChange={(value) => updateExperience(index, "company", value)}
+                                error={profileErrors.experience?.[index]?.company}
                               />
                               <FieldInput
                                 label="Role"
                                 value={experience.role}
                                 disabled={!isEditing}
                                 onChange={(value) => updateExperience(index, "role", value)}
+                                error={profileErrors.experience?.[index]?.role}
                               />
                               <FieldInput
                                 label="Duration"
                                 value={experience.duration}
                                 disabled={!isEditing}
                                 onChange={(value) => updateExperience(index, "duration", value)}
+                                error={profileErrors.experience?.[index]?.duration}
                               />
                             </div>
                             {isEditing && (
@@ -584,8 +642,40 @@ export default function Profile() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Summary</h2>
               <div className="space-y-4">
                 <DetailRow icon={<Mail className="w-5 h-5 text-gray-400" />} label="Email" value={profileData.email || "Not added"} />
-                <DetailRow icon={<Phone className="w-5 h-5 text-gray-400" />} label="Phone" value={profileData.contact_number || "Not added"} />
-                <DetailRow icon={<Briefcase className="w-5 h-5 text-gray-400" />} label="Specialization" value={profileData.specialization || "Not added"} />
+                {isEditing ? (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Phone</label>
+                    <input
+                      type="text"
+                      value={profileData.contact_number || ""}
+                      onChange={(e) => setProfileData((prev) => ({ ...prev, contact_number: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      placeholder="Enter phone number"
+                    />
+                    {profileErrors.contact_number && (
+                      <p className="text-xs text-red-500 font-bold mt-1.5">{profileErrors.contact_number}</p>
+                    )}
+                  </div>
+                ) : (
+                  <DetailRow icon={<Phone className="w-5 h-5 text-gray-400" />} label="Phone" value={profileData.contact_number || "Not added"} />
+                )}
+                {isEditing ? (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Specialization</label>
+                    <input
+                      type="text"
+                      value={profileData.specialization || ""}
+                      onChange={(e) => setProfileData((prev) => ({ ...prev, specialization: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      placeholder="Enter specialization"
+                    />
+                    {profileErrors.specialization && (
+                      <p className="text-xs text-red-500 font-bold mt-1.5">{profileErrors.specialization}</p>
+                    )}
+                  </div>
+                ) : (
+                  <DetailRow icon={<Briefcase className="w-5 h-5 text-gray-400" />} label="Specialization" value={profileData.specialization || "Not added"} />
+                )}
               </div>
             </div>
 

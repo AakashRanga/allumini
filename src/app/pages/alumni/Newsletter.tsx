@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Mail, Calendar, Search, BookOpen, Download, Eye, X, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
-import { getNewsletters, type NewsletterItem } from "@/lib/api";
+import { getNewsletters, type NewsletterItem, API_BASE_URL } from "@/lib/api";
 import DocumentViewer from "../../components/DocumentViewer";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5555";
 
 export default function Newsletter() {
   const [newsletters, setNewsletters] = useState<NewsletterItem[]>([]);

@@ -13,10 +13,9 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import logoSrc from "../../imports/logo.png";
-import { getUserProfile, type UserProfile } from "@/lib/api";
+import { getUserProfile, type UserProfile, API_BASE_URL } from "@/lib/api";
 import { useSessionCheck } from "@/lib/hooks/useSessionCheck";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5555";
 
 const navItems = [
   { path: "/alumni", label: "Home", icon: Home },

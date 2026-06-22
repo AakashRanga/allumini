@@ -68,3 +68,88 @@ export function formatSalary(salary: string | number | undefined | null): string
   return str;
 }
 
+export interface ProfileExperienceEntry {
+  company: string;
+  role: string;
+  duration: string;
+  description: string;
+}
+
+export interface ExperienceValidationError {
+  company?: string;
+  role?: string;
+  duration?: string;
+}
+
+export interface ProfileValidationError {
+  name?: string;
+  contact_number?: string;
+  specialization?: string;
+  experience?: ExperienceValidationError[];
+}
+
+export function validateUserProfile(data: {
+  name: string;
+  contact_number: string;
+  specialization: string;
+  previous_experience: ProfileExperienceEntry[];
+}): { isValid: boolean; errors: ProfileValidationError } {
+  const errors: ProfileValidationError = {};
+
+  if (!data.name?.trim()) {
+    errors.name = "Full name is required.";
+  }
+
+  const phoneDigits = (data.contact_number || "").replace(/\D/g, "");
+  if (!phoneDigits) {
+    errors.contact_number = "Contact number is required.";
+  } else if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+    errors.contact_number = "Contact number must be between 10 and 15 digits.";
+  }
+
+  if (!data.specialization?.trim()) {
+    errors.specialization = "Specialization is required.";
+  }
+
+  if (data.previous_experience && Array.isArray(data.previous_experience)) {
+    const expErrors: ExperienceValidationError[] = [];
+    let hasExpError = false;
+
+    data.previous_experience.forEach((entry, idx) => {
+      const company = (entry.company || "").trim();
+      const role = (entry.role || "").trim();
+      const duration = (entry.duration || "").trim();
+      const description = (entry.description || "").trim();
+
+      const entryErrors: ExperienceValidationError = {};
+
+      // If at least one field is filled, the entry is active and needs full validation
+      if (company || role || duration || description) {
+        if (!company) {
+          entryErrors.company = "Company name is required.";
+          hasExpError = true;
+        }
+        if (!role) {
+          entryErrors.role = "Job title/role is required.";
+          hasExpError = true;
+        }
+        if (!duration) {
+          entryErrors.duration = "Duration is required.";
+          hasExpError = true;
+        }
+      }
+
+      expErrors[idx] = entryErrors;
+    });
+
+    if (hasExpError) {
+      errors.experience = expErrors;
+    }
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+}
+

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search, Filter, Eye, Mail, Phone, GraduationCap, Calendar, CheckCircle, Clock } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Alumni {
   id: number;
@@ -27,7 +28,7 @@ export default function AlumniManagement() {
 
   const fetchAlumni = async () => {
     try {
-      const response = await fetch("http://localhost:5555/verification/all-alumni");
+      const response = await fetch(`${API_BASE_URL}/verification/all-alumni`);
       const data = await response.json();
       if (data.success) {
         setAlumniData(data.data);

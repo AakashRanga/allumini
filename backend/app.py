@@ -14,6 +14,13 @@ from models import (
     CREATE_NEWSLETTERS_TABLE, TABLE_NEWSLETTERS
 )
 import os
+from dotenv import load_dotenv
+
+# Load .env relative to this file's directory (backend/)
+base_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(base_dir, '.env'))
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:7777")
 
 app = Flask(__name__)
 
@@ -45,7 +52,7 @@ def serve_newsletter_attachment(filename):
 def handle_options():
     if request.method == "OPTIONS":
         response = app.make_default_options_response()
-        response.headers["Access-Control-Allow-Origin"] = "http://localhost:7777"
+        response.headers["Access-Control-Allow-Origin"] = FRONTEND_URL
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,X-Auth-User-Id,X-Auth-Role"
         response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
@@ -53,7 +60,7 @@ def handle_options():
 
 @app.after_request
 def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "http://localhost:7777"
+    response.headers["Access-Control-Allow-Origin"] = FRONTEND_URL
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,X-Auth-User-Id,X-Auth-Role"
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
@@ -207,4 +214,5 @@ app.register_blueprint(newsletter_bp, url_prefix="/newsletters")
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True, port=5555)
+    port = int(os.getenv("PORT", "5555"))
+    app.run(debug=True, port=port)

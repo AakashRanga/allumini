@@ -1,7 +1,9 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env relative to this file's directory (backend/)
+base_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(base_dir, '.env'))
 
 DB_CONFIG = {
     "host": os.getenv("MYSQL_HOST", "127.0.0.1"),

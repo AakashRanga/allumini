@@ -5,13 +5,15 @@ from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 import secrets
 
-load_dotenv()
+# Load .env relative to parent directory (backend/)
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(base_dir, '.env'))
 
 SMTP_EMAIL = os.getenv("smtp_email")
 SMTP_PASSWORD = os.getenv("smtp_password")
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:7777")
 
 def send_otp_email(to_email: str, otp: str, name: str):
     """Send OTP verification email"""
