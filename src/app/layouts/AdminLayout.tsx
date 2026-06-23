@@ -18,7 +18,7 @@ import {
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { clearAuthSession, refreshAuthSessionActivity } from "@/lib/session";
 import { useSessionCheck } from "@/lib/hooks/useSessionCheck";
-import { apiCall } from "@/lib/api";
+import { apiCall, getNotifications } from "@/lib/api";
 import logoSrc from "../../imports/logo.png";
 
 const menuItems = [
@@ -43,6 +43,7 @@ export default function AdminLayout() {
   useSessionCheck("admin");
 
   const [pendingVerificationCount, setPendingVerificationCount] = useState(0);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
   useEffect(() => {
     async function fetchCounts() {
@@ -55,13 +56,28 @@ export default function AdminLayout() {
       } catch (err) {
         console.error("Failed to fetch pending verification requests count:", err);
       }
+
+      try {
+        const response = await getNotifications();
+        if (response.success && response.data) {
+          const unread = response.data.filter((n) => n.is_read === 0).length;
+          setUnreadNotificationsCount(unread);
+        }
+      } catch (err) {
+        console.error("Failed to fetch notifications count:", err);
+      }
     }
     void fetchCounts();
+
+    window.addEventListener("notifications_updated", fetchCounts);
+    return () => {
+      window.removeEventListener("notifications_updated", fetchCounts);
+    };
   }, [location.pathname]);
 
-  // Mocked counts for badges, filtered to notifications and dynamic verification requests
+  // Dynamic badge counts
   const badgeCounts: Record<string, number> = {
-    "/admin/notifications": 2, // Matches the 2 unread notifications in AdminNotifications.tsx
+    "/admin/notifications": unreadNotificationsCount,
     "/admin/verification": pendingVerificationCount,
   };
 
@@ -220,7 +236,11 @@ export default function AdminLayout() {
             <div className="flex items-center gap-3">
               <button onClick={() => navigate("/admin/notifications")} className="relative p-1.5 text-slate-500 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition-all group">
                 <Bell className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-gradient-to-r from-pink-500 to-red-500 rounded-full animate-pulse"></span>
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 min-w-4 h-4 bg-gradient-to-r from-pink-500 to-red-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center px-1 animate-pulse">
+                    {unreadNotificationsCount}
+                  </span>
+                )}
               </button>
               <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-blue-50 px-3 py-1.5 rounded-full border border-purple-100 shadow-inner">
                 <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center shadow-md">

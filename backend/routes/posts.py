@@ -41,6 +41,20 @@ def create_job():
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (user_id, company, role, location, job_type, salary, description, requirements, apply_link_val)
         )
+        
+        # Send Notification to all alumni
+        try:
+            poster = execute_query(f"SELECT name FROM `{TABLE_ALUMNI_USERS}` WHERE id = %s", (user_id,), fetch_one=True)
+            poster_name = poster["name"] if poster else "An alumnus"
+            from utils.notifications import send_notification_to_all_alumni
+            send_notification_to_all_alumni(
+                title="New Job Opening",
+                message=f"{role} role at {company} has been posted by {poster_name}.",
+                notification_type="job"
+            )
+        except Exception as n_err:
+            print(f"Warning: Failed to send job notification: {n_err}")
+
         return jsonify({"success": True, "message": "Job posted successfully"}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -66,6 +80,7 @@ def create_achievement():
             VALUES (%s, %s, %s, %s)""",
             (user_id, title, description, image_url)
         )
+
         return jsonify({"success": True, "message": "Achievement posted successfully"}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500

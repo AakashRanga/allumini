@@ -39,9 +39,15 @@ def get_authenticated_user_role():
 @gurupadigam_bp.route("", methods=["GET"])
 def get_gurupadigam_messages():
     try:
-        messages = execute_query(
-            f"SELECT id, admin_id, title, description, attachment_url, is_published, created_at FROM {TABLE_GURUPADIGAM_MESSAGES} WHERE is_published = 1 ORDER BY created_at DESC"
-        )
+        role = get_authenticated_user_role()
+        if role == 'admin':
+            messages = execute_query(
+                f"SELECT id, admin_id, title, description, attachment_url, is_published, created_at FROM {TABLE_GURUPADIGAM_MESSAGES} ORDER BY created_at DESC"
+            )
+        else:
+            messages = execute_query(
+                f"SELECT id, admin_id, title, description, attachment_url, is_published, created_at FROM {TABLE_GURUPADIGAM_MESSAGES} WHERE is_published = 1 ORDER BY created_at DESC"
+            )
 
         # Get admin names for each message
         for msg in messages:
@@ -136,6 +142,18 @@ def create_gurupadigam_message():
         cursor.close()
         conn.close()
 
+        # Send Notification to all alumni if published
+        if is_published == 1:
+            try:
+                from utils.notifications import send_notification_to_all_alumni
+                send_notification_to_all_alumni(
+                    title="New Announcement",
+                    message=title,
+                    notification_type="gurupadigam"
+                )
+            except Exception as n_err:
+                print(f"Warning: Failed to send announcement notification: {n_err}")
+
         return jsonify({
             "message": "Gurupadigam message created successfully",
             "id": last_id
@@ -212,6 +230,18 @@ def update_gurupadigam_message(message_id):
         conn.commit()
         cursor.close()
         conn.close()
+
+        # Send Notification to all alumni if updated and published
+        if is_published == 1:
+            try:
+                from utils.notifications import send_notification_to_all_alumni
+                send_notification_to_all_alumni(
+                    title="Announcement Updated",
+                    message=title,
+                    notification_type="gurupadigam"
+                )
+            except Exception as n_err:
+                print(f"Warning: Failed to send announcement notification: {n_err}")
 
         return jsonify({"message": "Gurupadigam message updated successfully"}), 200
     except Exception as e:

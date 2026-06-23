@@ -31,9 +31,15 @@ def get_authenticated_user_role():
 @newsletter_bp.route('', methods=['GET'])
 def get_newsletters():
     try:
-        newsletters = execute_query(
-            f"SELECT id, admin_id, title, description, attachment_url, thumbnail, is_published, created_at FROM {TABLE_NEWSLETTERS} WHERE is_published = 1 ORDER BY created_at DESC"
-        )
+        role = get_authenticated_user_role()
+        if role == 'admin':
+            newsletters = execute_query(
+                f"SELECT id, admin_id, title, description, attachment_url, thumbnail, is_published, created_at FROM {TABLE_NEWSLETTERS} ORDER BY created_at DESC"
+            )
+        else:
+            newsletters = execute_query(
+                f"SELECT id, admin_id, title, description, attachment_url, thumbnail, is_published, created_at FROM {TABLE_NEWSLETTERS} WHERE is_published = 1 ORDER BY created_at DESC"
+            )
 
         for newsletter in newsletters:
             admin = execute_query(
@@ -131,6 +137,18 @@ def create_newsletter():
         cursor.close()
         conn.close()
 
+        # Send Notification to all alumni if published
+        if is_published == 1:
+            try:
+                from utils.notifications import send_notification_to_all_alumni
+                send_notification_to_all_alumni(
+                    title="New Newsletter Published",
+                    message=title,
+                    notification_type="newsletter"
+                )
+            except Exception as n_err:
+                print(f"Warning: Failed to send newsletter notification: {n_err}")
+
         return jsonify({"message": "Newsletter created successfully", "id": last_id}), 201
     except Exception as e:
         print(f"Error creating newsletter: {e}")
@@ -212,6 +230,18 @@ def update_newsletter(newsletter_id):
         conn.commit()
         cursor.close()
         conn.close()
+
+        # Send Notification to all alumni if updated and published
+        if is_published == 1:
+            try:
+                from utils.notifications import send_notification_to_all_alumni
+                send_notification_to_all_alumni(
+                    title="Newsletter Updated",
+                    message=title,
+                    notification_type="newsletter"
+                )
+            except Exception as n_err:
+                print(f"Warning: Failed to send newsletter notification: {n_err}")
 
         return jsonify({"message": "Newsletter updated successfully"}), 200
     except Exception as e:

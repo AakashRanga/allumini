@@ -717,3 +717,29 @@ export async function deleteNewsletter(id: number) {
 
   return { success: true, data };
 }
+
+export type NotificationItem = {
+  id: number;
+  user_id: number;
+  title: string;
+  message: string;
+  type: string;
+  is_read: number;
+  created_at: string;
+};
+
+export async function getNotifications() {
+  return request<NotificationItem[]>("/notifications", { method: "GET" });
+}
+
+export async function markNotificationRead(id: number) {
+  return request<{ message: string }>(`/notifications/${id}/read`, { method: "PUT" });
+}
+
+export async function markAllNotificationsRead() {
+  return request<{ message: string }>("/notifications/read-all", { method: "PUT" });
+}
+
+export async function deleteNotification(id: number) {
+  return request<{ message: string }>(`/notifications/${id}`, { method: "DELETE" });
+}

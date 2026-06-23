@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import logoSrc from "../../imports/logo.png";
-import { getUserProfile, type UserProfile, API_BASE_URL } from "@/lib/api";
+import { getUserProfile, type UserProfile, API_BASE_URL, getNotifications } from "@/lib/api";
 import { useSessionCheck } from "@/lib/hooks/useSessionCheck";
 
 
@@ -34,6 +34,8 @@ export default function AlumniLayout() {
   // Check session validity on every screen
   useSessionCheck("alumni");
 
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+
   useEffect(() => {
     async function fetchUserProfile() {
       const response = await getUserProfile();
@@ -43,6 +45,26 @@ export default function AlumniLayout() {
     }
     void fetchUserProfile();
   }, []);
+
+  useEffect(() => {
+    async function fetchUnreadNotifications() {
+      try {
+        const response = await getNotifications();
+        if (response.success && response.data) {
+          const unread = response.data.filter((n) => n.is_read === 0).length;
+          setUnreadNotificationsCount(unread);
+        }
+      } catch (err) {
+        console.error("Failed to fetch notifications:", err);
+      }
+    }
+    void fetchUnreadNotifications();
+
+    window.addEventListener("notifications_updated", fetchUnreadNotifications);
+    return () => {
+      window.removeEventListener("notifications_updated", fetchUnreadNotifications);
+    };
+  }, [location.pathname]);
 
   const userInitials = userProfile?.name
     ? userProfile.name
@@ -99,7 +121,11 @@ export default function AlumniLayout() {
                 className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <Bell className="w-6 h-6" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-4 h-4 bg-red-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center px-1">
+                    {unreadNotificationsCount}
+                  </span>
+                )}
               </button>
 
               <button

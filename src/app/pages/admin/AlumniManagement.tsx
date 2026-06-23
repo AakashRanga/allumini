@@ -162,26 +162,51 @@ export default function AlumniManagement() {
                         <span className="text-gray-600">Specialization:</span>
                         <span className="font-medium text-gray-900">{alumni.specialization}</span>
                       </div>
-                      {alumni.academic_details && (
-                        <div className="md:col-span-2 mt-2 pt-2 border-t border-gray-200">
-                          <span className="text-gray-600 block mb-1 text-sm">Full Academic Details:</span>
-                          <pre className="text-xs bg-white p-3 rounded-lg border border-gray-100 overflow-x-auto text-gray-800">
-                            {(() => {
-                              try {
-                                return JSON.stringify(
-                                  typeof alumni.academic_details === 'string' 
-                                    ? JSON.parse(alumni.academic_details) 
-                                    : alumni.academic_details, 
-                                  null, 
-                                  2
-                                );
-                              } catch (e) {
-                                return alumni.academic_details;
-                              }
-                            })()}
-                          </pre>
-                        </div>
-                      )}
+                      {alumni.academic_details && (() => {
+                        let detailsArray: any[] = [];
+                        try {
+                          const parsed = typeof alumni.academic_details === 'string'
+                            ? JSON.parse(alumni.academic_details)
+                            : alumni.academic_details;
+                          if (Array.isArray(parsed)) {
+                            detailsArray = parsed;
+                          } else if (parsed && typeof parsed === 'object') {
+                            detailsArray = [parsed];
+                          }
+                        } catch (e) {
+                          console.error("Failed to parse academic details", e);
+                        }
+
+                        if (detailsArray.length === 0) return null;
+
+                        return (
+                          <div className="md:col-span-2 mt-4 pt-4 border-t border-slate-100">
+                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-3">Academic Pathways</span>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              {detailsArray.map((detail, index) => (
+                                <div key={index} className="flex gap-4 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-purple-200 transition-all group">
+                                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center shrink-0 text-purple-600 font-bold text-sm">
+                                    {detail.degree || "DEG"}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className="text-sm font-black text-slate-800 truncate">
+                                        {detail.degree} {detail.branch ? `— ${detail.branch}` : ""}
+                                      </p>
+                                    </div>
+                                    <p className="text-xs text-slate-500 font-semibold truncate mt-0.5">{detail.college_name || "Institution unspecified"}</p>
+                                    {detail.joining_year && (
+                                      <span className="inline-block mt-2 px-2.5 py-0.5 bg-slate-50 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                                        Class of {detail.joining_year}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

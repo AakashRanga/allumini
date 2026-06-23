@@ -129,6 +129,7 @@ export default function Newsletters() {
 
   const selectedNewsletter = newsletters.find((item) => item.id === selectedNewsletterId);
   const attachments = selectedNewsletter?.attachment_url || [];
+  const editingNewsletter = editingId ? newsletters.find((n) => n.id === editingId) : null;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn">
@@ -165,9 +166,27 @@ export default function Newsletters() {
       {error && <div className="text-sm font-bold text-red-600 bg-red-50 px-6 py-4 rounded-2xl border border-red-100 animate-slideIn">{error}</div>}
 
       {showComposer && (
-        <div className="bg-white rounded-[40px] p-10 border border-slate-100 shadow-2xl animate-scaleIn relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sky-500 to-blue-600" />
-          <h2 className="text-3xl font-black text-slate-900 mb-8">{editingId ? "Edit Newsletter" : "Create Newsletter"}</h2>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex justify-center items-start py-12 px-4 premium-scrollbar">
+          <div className="bg-white rounded-[40px] p-10 sm:p-12 border border-slate-100 shadow-2xl animate-scaleIn relative overflow-hidden max-w-5xl w-full my-auto">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sky-500 to-blue-600" />
+            
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-black text-slate-900">
+                {editingId ? "Edit Newsletter" : "Create Newsletter"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowComposer(false);
+                  setEditingId(null);
+                  setUploadedFiles([]);
+                  setThumbnail(null);
+                }}
+                className="p-3 hover:bg-slate-100 rounded-2xl text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="grid grid-cols-1 gap-8">
@@ -224,12 +243,12 @@ export default function Newsletters() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-              ) : editingId && selectedNewsletter?.thumbnail ? (
+              ) : editingId && editingNewsletter?.thumbnail ? (
                 <div className="mt-4 p-4 bg-slate-50 rounded-3xl border border-slate-100">
                   <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Current Thumbnail</p>
                   <div className="flex items-center gap-4">
                     <div className="w-24 h-16 bg-slate-200 rounded-xl overflow-hidden">
-                      <img src={`${API_BASE_URL}/newsletter-attachments/${selectedNewsletter.thumbnail}`} alt="Current thumbnail" className="w-full h-full object-cover" />
+                      <img src={`${API_BASE_URL}/newsletter-attachments/${editingNewsletter.thumbnail}`} alt="Current thumbnail" className="w-full h-full object-cover" />
                     </div>
                     <p className="text-sm font-medium text-slate-600">Uploading a new image will replace the current thumbnail.</p>
                   </div>
@@ -252,38 +271,66 @@ export default function Newsletters() {
                 </label>
               </div>
 
-              {uploadedFiles.length > 0 ? (
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-3xl shadow-sm animate-slideIn">
-                      <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-sky-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black text-slate-900 truncate">{file.name}</p>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{(file.size / 1024).toFixed(0)} KB</p>
-                      </div>
-                    </div>
-                  ))}
-                  <button type="button" onClick={handleRemoveFile} className="col-span-full text-center text-xs font-black text-red-500 uppercase tracking-widest hover:text-red-700 transition-colors pt-2">
-                    Clear All Files
-                  </button>
-                </div>
-              ) : editingId && selectedNewsletter?.attachment_url && selectedNewsletter.attachment_url.length > 0 ? (
+              {/* Existing Attachments */}
+              {editingId && editingNewsletter?.attachment_url && editingNewsletter.attachment_url.length > 0 && (
                 <div className="mt-6 p-6 bg-slate-50 rounded-3xl border border-slate-100">
                   <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Existing Attachments</p>
-                  <div className="flex flex-wrap gap-3">
-                    {selectedNewsletter.attachment_url.map((att, index) => (
-                      <div key={index} className="px-4 py-2 bg-white rounded-xl text-sm font-bold text-slate-700 shadow-sm border border-slate-200">
-                        {att.name}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {editingNewsletter.attachment_url.map((att, index) => (
+                      <div key={index} className="flex items-center justify-between gap-4 p-4 bg-white border border-slate-100 rounded-3xl shadow-sm">
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                          <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center shrink-0">
+                            <FileText className="w-6 h-6 text-sky-600" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-black text-slate-900 truncate" title={att.name}>{att.name}</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{att.type}</p>
+                          </div>
+                        </div>
+                        <a
+                          href={`${API_BASE_URL}/newsletter-attachments/${att.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-3 hover:bg-slate-100 rounded-2xl text-sky-600 hover:text-sky-800 transition-colors shrink-0"
+                          title="View document"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </a>
                       </div>
                     ))}
                   </div>
                   <p className="text-[10px] font-black text-sky-400 mt-6 uppercase tracking-widest italic flex items-center gap-2">
-                    <Sparkles className="w-3 h-3" /> Uploading new files will replace the current attachment.
+                    <Sparkles className="w-3 h-3"/> Note: Uploading new files will replace all existing attachments.
                   </p>
                 </div>
-              ) : null}
+              )}
+
+              {/* Newly Uploaded/Staged Files */}
+              {uploadedFiles.length > 0 && (
+                <div className="mt-6 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">New Uploads (To be saved)</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {uploadedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-3xl shadow-sm animate-slideIn">
+                        <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center shrink-0">
+                          <FileText className="w-6 h-6 text-sky-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-black text-slate-900 truncate" title={file.name}>{file.name}</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{(file.size / 1024).toFixed(0)} KB</p>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={handleRemoveFile}
+                      className="col-span-full text-center text-xs font-black text-red-500 uppercase tracking-widest hover:text-red-700 transition-colors pt-2"
+                    >
+                      Clear New Files
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-4 bg-slate-50 p-6 rounded-3xl w-fit">
@@ -297,14 +344,30 @@ export default function Newsletters() {
               <label htmlFor="newsletter-is-published" className="text-sm font-bold text-slate-700">Publish newsletter now</label>
             </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full text-center bg-sky-600 text-white uppercase font-black tracking-widest py-4 rounded-3xl hover:bg-sky-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {saving ? "Saving..." : editingId ? "Update Newsletter" : "Publish Newsletter"}
-            </button>
+            <div className="flex gap-4 pt-6">
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 py-5 bg-gradient-to-r from-sky-600 to-blue-700 text-white rounded-3xl font-black text-lg shadow-2xl shadow-sky-600/30 hover:shadow-sky-600/50 hover:-translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+              >
+                <Send className="w-6 h-6" />
+                {saving ? "Saving..." : editingId ? "Update Newsletter" : "Publish Newsletter"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowComposer(false);
+                  setEditingId(null);
+                  setUploadedFiles([]);
+                  setThumbnail(null);
+                }}
+                className="px-10 py-5 bg-slate-100 text-slate-600 rounded-3xl font-black text-lg hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
           </form>
+          </div>
         </div>
       )}
 
@@ -419,6 +482,33 @@ export default function Newsletters() {
           attachmentBasePath="/newsletter-attachments"
         />
       )}
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+        .animate-slideIn { animation: slideIn 0.5s ease-out forwards; }
+        .animate-scaleIn { animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .premium-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .premium-scrollbar::-webkit-scrollbar-track {
+          background: rgba(15, 23, 42, 0.03);
+          border-radius: 10px;
+        }
+        .premium-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(99, 102, 241, 0.35);
+          border-radius: 10px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+        .premium-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(99, 102, 241, 0.6);
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+      `}</style>
     </div>
   );
 }

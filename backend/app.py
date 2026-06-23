@@ -4,6 +4,7 @@ from routes.verification import verification_bp
 from routes.posts import posts_bp
 from routes.gurupadigam import gurupadigam_bp
 from routes.newsletters import newsletter_bp
+from routes.notifications import notifications_bp
 from db import get_connection
 from models import (
     CREATE_ALUMNI_USERS_TABLE, TABLE_ALUMNI_USERS,
@@ -11,7 +12,8 @@ from models import (
     CREATE_JOBS_TABLE, TABLE_JOBS,
     CREATE_ACHIEVEMENTS_TABLE, TABLE_ACHIEVEMENTS,
     CREATE_GURUPADIGAM_MESSAGES_TABLE, TABLE_GURUPADIGAM_MESSAGES,
-    CREATE_NEWSLETTERS_TABLE, TABLE_NEWSLETTERS
+    CREATE_NEWSLETTERS_TABLE, TABLE_NEWSLETTERS,
+    CREATE_NOTIFICATIONS_TABLE, TABLE_NOTIFICATIONS
 )
 import os
 from dotenv import load_dotenv
@@ -181,6 +183,15 @@ def init_db():
             print(f"Adding missing column to {TABLE_NEWSLETTERS}: {col_name}")
             cursor.execute(f"ALTER TABLE `{TABLE_NEWSLETTERS}` ADD COLUMN {col_name} {col_def}")
 
+    # Create notifications table if not exists
+    cursor.execute(CREATE_NOTIFICATIONS_TABLE)
+    expected_columns = parse_columns_from_sql(CREATE_NOTIFICATIONS_TABLE)
+    existing_columns = get_table_columns(cursor, TABLE_NOTIFICATIONS)
+    for col_name, col_def in expected_columns.items():
+        if col_name not in existing_columns:
+            print(f"Adding missing column to {TABLE_NOTIFICATIONS}: {col_name}")
+            cursor.execute(f"ALTER TABLE `{TABLE_NOTIFICATIONS}` ADD COLUMN {col_name} {col_def}")
+
     # Create indexes for overall_alumni (if they don't exist)
     index_statements = [
         f"CREATE INDEX idx_email ON `{TABLE_OVERALL_ALUMNI}` (email);",
@@ -211,6 +222,7 @@ app.register_blueprint(verification_bp, url_prefix="/verification")
 app.register_blueprint(posts_bp, url_prefix="/posts")
 app.register_blueprint(gurupadigam_bp, url_prefix="/gurupadigam")
 app.register_blueprint(newsletter_bp, url_prefix="/newsletters")
+app.register_blueprint(notifications_bp, url_prefix="/notifications")
 
 if __name__ == "__main__":
     init_db()

@@ -121,6 +121,17 @@ def register():
             )
         )
 
+        # Send Notification to admins
+        try:
+            from utils.notifications import send_notification_to_all_admins
+            send_notification_to_all_admins(
+                title="New Alumni Registration",
+                message=f"{validated['name']} ({validated['email']}) has registered and is pending verification/approval.",
+                notification_type="registration"
+            )
+        except Exception as n_err:
+            print(f"Warning: Failed to send registration notification: {n_err}")
+
         # Send OTP email
         success, error = send_otp_email(validated["email"], otp, validated["name"])
         if not success:
