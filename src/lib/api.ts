@@ -743,3 +743,46 @@ export async function markAllNotificationsRead() {
 export async function deleteNotification(id: number) {
   return request<{ message: string }>(`/notifications/${id}`, { method: "DELETE" });
 }
+
+export type DegreesMetadataResponse = {
+  degrees: string[];
+  branches: Record<string, string[]>;
+};
+
+export type AdminDegreeMapping = {
+  id: number;
+  degree_name: string;
+  branch_name: string | null;
+  is_hidden: number;
+};
+
+export async function getDegreesMetadata() {
+  return request<DegreesMetadataResponse>("/auth/degrees", { method: "GET" });
+}
+
+export async function getAdminDegrees() {
+  return request<AdminDegreeMapping[]>("/auth/admin/degrees", { method: "GET" });
+}
+
+export async function addAdminDegree(payload: { degree_name: string; branch_name: string | null }) {
+  return request<{ success: boolean; message: string }>("/auth/admin/degrees", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminDegree(
+  id: number,
+  payload: { degree_name: string; branch_name: string | null; is_hidden: number }
+) {
+  return request<{ success: boolean; message: string }>(`/auth/admin/degrees/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminDegree(id: number) {
+  return request<{ success: boolean; message: string }>(`/auth/admin/degrees/${id}`, {
+    method: "DELETE",
+  });
+}

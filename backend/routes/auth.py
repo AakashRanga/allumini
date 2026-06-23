@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 from db import execute_query
-from models import TABLE_ALUMNI_USERS
+from models import TABLE_ALUMNI_USERS, TABLE_DEGREES
 from utils.validators import validate_registration_data, validate_profile_data
 from utils.email import send_otp_email, send_password_reset_email, generate_reset_token
 from datetime import datetime, timedelta
@@ -779,5 +779,120 @@ def delete_profile_image():
 
     except Exception as e:
         print(f"Error deleting profile image: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+def check_admin_auth():
+    role = request.headers.get("X-Auth-Role")
+    user_id = request.headers.get("X-Auth-User-Id")
+    if role != "admin" or not user_id:
+        return False
+    return True
+
+@auth_bp.route("/degrees", methods=["GET"])
+def get_degrees():
+    try:
+        rows = execute_query(f"SELECT degree_name, branch_name FROM `{TABLE_DEGREES}` WHERE is_hidden = 0 ORDER BY id")
+        degrees_set = []
+        branches_map = {}
+        for row in rows:
+            deg = row["degree_name"]
+            branch = row["branch_name"]
+            if deg not in degrees_set:
+                degrees_set.append(deg)
+            if branch:
+                if deg not in branches_map:
+                    branches_map[deg] = []
+                branches_map[deg].append(branch)
+        return jsonify({
+            "degrees": degrees_set,
+            "branches": branches_map
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@auth_bp.route("/admin/degrees", methods=["GET"])
+def admin_get_degrees():
+    if not check_admin_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+    try:
+        rows = execute_query(f"SELECT id, degree_name, branch_name, is_hidden FROM `{TABLE_DEGREES}` ORDER BY degree_name, id")
+        return jsonify(rows), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@auth_bp.route("/admin/degrees", methods=["POST"])
+def admin_add_degree():
+    if not check_admin_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.get_json(silent=True) or {}
+    degree_name = data.get("degree_name")
+    degree_name = degree_name.strip() if isinstance(degree_name, str) else ""
+    
+    branch_name = data.get("branch_name")
+    branch_name = branch_name.strip() if isinstance(branch_name, str) else None
+    if not branch_name:
+        branch_name = None
+
+    if not degree_name:
+        return jsonify({"error": "Degree name is required"}), 400
+    try:
+        # Check duplicate
+        if branch_name:
+            existing = execute_query(
+                f"SELECT id FROM `{TABLE_DEGREES}` WHERE degree_name = %s AND branch_name = %s",
+                (degree_name, branch_name),
+                fetch_one=True
+            )
+        else:
+            existing = execute_query(
+                f"SELECT id FROM `{TABLE_DEGREES}` WHERE degree_name = %s AND branch_name IS NULL",
+                (degree_name,),
+                fetch_one=True
+            )
+        if existing:
+            return jsonify({"error": "Degree/Branch mapping already exists"}), 400
+
+        execute_query(
+            f"INSERT INTO `{TABLE_DEGREES}` (degree_name, branch_name, is_hidden) VALUES (%s, %s, 0)",
+            (degree_name, branch_name)
+        )
+        return jsonify({"success": True, "message": "Degree mapping added successfully"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@auth_bp.route("/admin/degrees/<int:mapping_id>", methods=["PUT"])
+def admin_update_degree(mapping_id):
+    if not check_admin_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.get_json(silent=True) or {}
+    degree_name = data.get("degree_name")
+    degree_name = degree_name.strip() if isinstance(degree_name, str) else ""
+    
+    branch_name = data.get("branch_name")
+    branch_name = branch_name.strip() if isinstance(branch_name, str) else None
+    if not branch_name:
+        branch_name = None
+
+    is_hidden = 1 if data.get("is_hidden") else 0
+    if not degree_name:
+        return jsonify({"error": "Degree name is required"}), 400
+    try:
+        execute_query(
+            f"UPDATE `{TABLE_DEGREES}` SET degree_name = %s, branch_name = %s, is_hidden = %s WHERE id = %s",
+            (degree_name, branch_name, is_hidden, mapping_id)
+        )
+        return jsonify({"success": True, "message": "Degree mapping updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@auth_bp.route("/admin/degrees/<int:mapping_id>", methods=["DELETE"])
+def admin_delete_degree(mapping_id):
+    if not check_admin_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+    try:
+        execute_query(f"DELETE FROM `{TABLE_DEGREES}` WHERE id = %s", (mapping_id,))
+        return jsonify({"success": True, "message": "Degree mapping deleted successfully"}), 200
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 

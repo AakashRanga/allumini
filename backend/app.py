@@ -13,7 +13,8 @@ from models import (
     CREATE_ACHIEVEMENTS_TABLE, TABLE_ACHIEVEMENTS,
     CREATE_GURUPADIGAM_MESSAGES_TABLE, TABLE_GURUPADIGAM_MESSAGES,
     CREATE_NEWSLETTERS_TABLE, TABLE_NEWSLETTERS,
-    CREATE_NOTIFICATIONS_TABLE, TABLE_NOTIFICATIONS
+    CREATE_NOTIFICATIONS_TABLE, TABLE_NOTIFICATIONS,
+    CREATE_DEGREES_TABLE, TABLE_DEGREES
 )
 import os
 from dotenv import load_dotenv
@@ -191,6 +192,81 @@ def init_db():
         if col_name not in existing_columns:
             print(f"Adding missing column to {TABLE_NOTIFICATIONS}: {col_name}")
             cursor.execute(f"ALTER TABLE `{TABLE_NOTIFICATIONS}` ADD COLUMN {col_name} {col_def}")
+
+    # Create degrees table if not exists
+    cursor.execute(CREATE_DEGREES_TABLE)
+    expected_columns = parse_columns_from_sql(CREATE_DEGREES_TABLE)
+    existing_columns = get_table_columns(cursor, TABLE_DEGREES)
+    for col_name, col_def in expected_columns.items():
+        if col_name not in existing_columns:
+            print(f"Adding missing column to {TABLE_DEGREES}: {col_name}")
+            cursor.execute(f"ALTER TABLE `{TABLE_DEGREES}` ADD COLUMN {col_name} {col_def}")
+
+    # Seed degrees table if empty
+    cursor.execute(f"SELECT COUNT(*) as count FROM `{TABLE_DEGREES}`")
+    count_row = cursor.fetchone()
+    count = count_row["count"] if count_row else 0
+    if count == 0:
+        seed_data = [
+            ("BDS", None),
+            ("MDS", "Orthodontics & Dentofacial Orthopaedics"),
+            ("MDS", "Oral & Maxillofacial Surgery"),
+            ("MDS", "Periodontics"),
+            ("MDS", "Endodontics"),
+            ("MDS", "Prosthodontics"),
+            ("MDS", "Oral Medicine & Radiology"),
+            ("MDS", "Pedodontics & Preventive Dentistry"),
+            ("MDS", "Conservative Dentistry & Endodontics"),
+            ("MDS", "Oral Pathology & Microbiology"),
+            ("MDS", "Public Health Dentistry"),
+            ("MS", "General Surgery"),
+            ("MS", "Orthopaedics"),
+            ("MS", "ENT"),
+            ("MS", "Ophthalmology"),
+            ("MS", "Obstetrics & Gynaecology"),
+            ("MS", "Paediatric Surgery"),
+            ("MS", "Neurosurgery"),
+            ("MS", "Plastic & Reconstructive Surgery"),
+            ("MS", "Cardiothoracic Surgery"),
+            ("MS", "Urology"),
+            ("FDS", "Oral & Maxillofacial Surgery"),
+            ("FDS", "Orthodontics"),
+            ("FDS", "Periodontics"),
+            ("FDS", "Endodontics"),
+            ("FDS", "Prosthodontics"),
+            ("FDS", "Pedodontics"),
+            ("DT", "Dental Prosthetics"),
+            ("DT", "Orthodontic Technology"),
+            ("DT", "Dental Ceramics"),
+            ("DT", "Maxillofacial Technology"),
+            ("DT", "Crown & Bridge Technology"),
+            ("MSC", "Biochemistry"),
+            ("MSC", "Microbiology"),
+            ("MSC", "Anatomy"),
+            ("MSC", "Physiology"),
+            ("MSC", "Pharmacology"),
+            ("MSC", "Pathology"),
+            ("MSC", "Biotechnology"),
+            ("MSC", "Chemistry"),
+            ("MSC", "Zoology"),
+            ("MSC", "Botany"),
+            ("PHD", "Dental Sciences"),
+            ("PHD", "Biochemistry"),
+            ("PHD", "Microbiology"),
+            ("PHD", "Pharmacology"),
+            ("PHD", "Physiology"),
+            ("PHD", "Anatomy"),
+            ("PHD", "Pathology"),
+            ("PHD", "Public Health"),
+            ("PHD", "Clinical Research"),
+            ("PHD", "Biotechnology")
+        ]
+        for deg, branch in seed_data:
+            cursor.execute(
+                f"INSERT INTO `{TABLE_DEGREES}` (degree_name, branch_name, is_hidden) VALUES (%s, %s, 0)",
+                (deg, branch)
+            )
+        print(f"✓ Seeded {len(seed_data)} degree-branch mappings to `{TABLE_DEGREES}`")
 
     # Create indexes for overall_alumni (if they don't exist)
     index_statements = [

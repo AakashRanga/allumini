@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Mail,
+  GraduationCap,
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { clearAuthSession, refreshAuthSessionActivity } from "@/lib/session";
@@ -30,7 +31,7 @@ const menuItems = [
   { path: "/admin/newsletters", label: "Newsletters", icon: Mail },
   { path: "/admin/notifications", label: "Notifications", icon: Bell },
   { path: "/admin/alumni-management", label: "Alumni Management", icon: Users },
-
+  { path: "/admin/degrees", label: "Degree & Branch Config", icon: GraduationCap },
 ];
 
 export default function AdminLayout() {

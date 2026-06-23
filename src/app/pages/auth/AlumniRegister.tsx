@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -9,83 +9,9 @@ import {
   Calendar,
   Building2,
 } from "lucide-react";
-import { registerAlumni } from "@/lib/api";
+import { registerAlumni, getDegreesMetadata } from "@/lib/api";
 
-const DEGREE_OPTIONS = [
-  "BDS",
-  "MDS",
-  "MS",
-  "FDS",
-  "DT",
-  "MSC",
-  "PHD",
-];
 
-const DEGREE_BRANCHES: Record<string, string[]> = {
-  MDS: [
-    "Orthodontics & Dentofacial Orthopaedics",
-    "Oral & Maxillofacial Surgery",
-    "Periodontics",
-    "Endodontics",
-    "Prosthodontics",
-    "Oral Medicine & Radiology",
-    "Pedodontics & Preventive Dentistry",
-    "Conservative Dentistry & Endodontics",
-    "Oral Pathology & Microbiology",
-    "Public Health Dentistry",
-  ],
-  MS: [
-    "General Surgery",
-    "Orthopaedics",
-    "ENT",
-    "Ophthalmology",
-    "Obstetrics & Gynaecology",
-    "Paediatric Surgery",
-    "Neurosurgery",
-    "Plastic & Reconstructive Surgery",
-    "Cardiothoracic Surgery",
-    "Urology",
-  ],
-  FDS: [
-    "Oral & Maxillofacial Surgery",
-    "Orthodontics",
-    "Periodontics",
-    "Endodontics",
-    "Prosthodontics",
-    "Pedodontics",
-  ],
-  DT: [
-    "Dental Prosthetics",
-    "Orthodontic Technology",
-    "Dental Ceramics",
-    "Maxillofacial Technology",
-    "Crown & Bridge Technology",
-  ],
-  MSC: [
-    "Biochemistry",
-    "Microbiology",
-    "Anatomy",
-    "Physiology",
-    "Pharmacology",
-    "Pathology",
-    "Biotechnology",
-    "Chemistry",
-    "Zoology",
-    "Botany",
-  ],
-  PHD: [
-    "Dental Sciences",
-    "Biochemistry",
-    "Microbiology",
-    "Pharmacology",
-    "Physiology",
-    "Anatomy",
-    "Pathology",
-    "Public Health",
-    "Clinical Research",
-    "Biotechnology",
-  ],
-};
 
 export default function AlumniRegister() {
   const navigate = useNavigate();
@@ -102,6 +28,89 @@ export default function AlumniRegister() {
   const [selectedBranches, setSelectedBranches] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [degreeOptions, setDegreeOptions] = useState<string[]>([]);
+  const [degreeBranches, setDegreeBranches] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    async function loadDegrees() {
+      const response = await getDegreesMetadata();
+      if (response.success) {
+        setDegreeOptions(response.data.degrees || []);
+        setDegreeBranches(response.data.branches || {});
+      } else {
+        console.error("Failed to load degree mappings: ", response.error);
+        // Fallback to static mapping if API fails to prevent page breaking
+        setDegreeOptions(["BDS", "MDS", "MS", "FDS", "DT", "MSC", "PHD"]);
+        setDegreeBranches({
+          MDS: [
+            "Orthodontics & Dentofacial Orthopaedics",
+            "Oral & Maxillofacial Surgery",
+            "Periodontics",
+            "Endodontics",
+            "Prosthodontics",
+            "Oral Medicine & Radiology",
+            "Pedodontics & Preventive Dentistry",
+            "Conservative Dentistry & Endodontics",
+            "Oral Pathology & Microbiology",
+            "Public Health Dentistry",
+          ],
+          MS: [
+            "General Surgery",
+            "Orthopaedics",
+            "ENT",
+            "Ophthalmology",
+            "Obstetrics & Gynaecology",
+            "Paediatric Surgery",
+            "Neurosurgery",
+            "Plastic & Reconstructive Surgery",
+            "Cardiothoracic Surgery",
+            "Urology",
+          ],
+          FDS: [
+            "Oral & Maxillofacial Surgery",
+            "Orthodontics",
+            "Periodontics",
+            "Endodontics",
+            "Prosthodontics",
+            "Pedodontics",
+          ],
+          DT: [
+            "Dental Prosthetics",
+            "Orthodontic Technology",
+            "Dental Ceramics",
+            "Maxillofacial Technology",
+            "Crown & Bridge Technology",
+          ],
+          MSC: [
+            "Biochemistry",
+            "Microbiology",
+            "Anatomy",
+            "Physiology",
+            "Pharmacology",
+            "Pathology",
+            "Biotechnology",
+            "Chemistry",
+            "Zoology",
+            "Botany",
+          ],
+          PHD: [
+            "Dental Sciences",
+            "Biochemistry",
+            "Microbiology",
+            "Pharmacology",
+            "Physiology",
+            "Anatomy",
+            "Pathology",
+            "Public Health",
+            "Clinical Research",
+            "Biotechnology",
+          ],
+        });
+      }
+    }
+    void loadDegrees();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -298,7 +307,7 @@ export default function AlumniRegister() {
                 </span>
               </label>
               <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-xl bg-gray-50 min-h-[52px]">
-                {DEGREE_OPTIONS.map((degree) => (
+                {degreeOptions.map((degree) => (
                   <button
                     key={degree}
                     type="button"
@@ -357,7 +366,7 @@ export default function AlumniRegister() {
                           required
                         />
                       </div>
-                      {degree !== "BDS" && DEGREE_BRANCHES[degree] && (
+                      {degreeBranches[degree] && degreeBranches[degree].length > 0 && (
                         <div className="sm:col-span-2">
                           <label className="block text-xs text-gray-500 mb-1">Branch</label>
                           <select
@@ -367,7 +376,7 @@ export default function AlumniRegister() {
                             required
                           >
                             <option value="">Select branch</option>
-                            {DEGREE_BRANCHES[degree].map((b) => (
+                            {degreeBranches[degree].map((b) => (
                               <option key={b} value={b}>{b}</option>
                             ))}
                           </select>
