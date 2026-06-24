@@ -344,27 +344,34 @@ export default function Newsletters() {
               <label htmlFor="newsletter-is-published" className="text-sm font-bold text-slate-700">Publish newsletter now</label>
             </div>
 
-            <div className="flex gap-4 pt-6">
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex-1 py-5 bg-gradient-to-r from-sky-600 to-blue-700 text-white rounded-3xl font-black text-lg shadow-2xl shadow-sky-600/30 hover:shadow-sky-600/50 hover:-translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
-              >
-                <Send className="w-6 h-6" />
-                {saving ? "Saving..." : editingId ? "Update Newsletter" : "Publish Newsletter"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowComposer(false);
-                  setEditingId(null);
-                  setUploadedFiles([]);
-                  setThumbnail(null);
-                }}
-                className="px-10 py-5 bg-slate-100 text-slate-600 rounded-3xl font-black text-lg hover:bg-slate-200 transition-all"
-              >
-                Cancel
-              </button>
+            <div className="flex gap-4 pt-6 justify-center">
+              {saving ? (
+                <div className="flex justify-center items-center py-5 flex-1 bg-slate-50 border border-slate-200 rounded-3xl">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-sky-600"></div>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="submit"
+                    className="flex-1 py-5 bg-gradient-to-r from-sky-600 to-blue-700 text-white rounded-3xl font-black text-lg shadow-2xl shadow-sky-600/30 hover:shadow-sky-600/50 hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
+                  >
+                    <Send className="w-6 h-6" />
+                    {editingId ? "Update Newsletter" : "Publish Newsletter"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowComposer(false);
+                      setEditingId(null);
+                      setUploadedFiles([]);
+                      setThumbnail(null);
+                    }}
+                    className="px-10 py-5 bg-slate-100 text-slate-600 rounded-3xl font-black text-lg hover:bg-slate-200 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
             </div>
           </form>
           </div>

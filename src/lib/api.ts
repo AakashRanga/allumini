@@ -297,6 +297,18 @@ export async function updateAchievement(achievementId: number, payload: UpdateAc
   });
 }
 
+export async function deleteJob(jobId: number) {
+  return request<{ message: string }>(`/posts/job/${jobId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function deleteAchievement(achievementId: number) {
+  return request<{ message: string }>(`/posts/achievement/${achievementId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function uploadProfileImage(file: File) {
   const authSession = getAuthSession();
   if (!authSession) {

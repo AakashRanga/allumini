@@ -50,7 +50,8 @@ def create_job():
             send_notification_to_all_alumni(
                 title="New Job Opening",
                 message=f"{role} role at {company} has been posted by {poster_name}.",
-                notification_type="job"
+                notification_type="job",
+                exclude_user_id=user_id
             )
         except Exception as n_err:
             print(f"Warning: Failed to send job notification: {n_err}")
@@ -252,6 +253,72 @@ def update_achievement(achievement_id):
     try:
         execute_query(query, tuple(params))
         return jsonify({"success": True, "message": "Achievement updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@posts_bp.route("/job/<int:job_id>", methods=["DELETE"])
+def delete_job(job_id):
+    user_id = get_authenticated_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        existing = execute_query(
+            f"SELECT * FROM `{TABLE_JOBS}` WHERE id=%s",
+            (job_id,),
+            fetch_one=True
+        )
+        if not existing:
+            return jsonify({"error": "Job not found"}), 404
+        if existing.get("user_id") != user_id:
+            return jsonify({"error": "Unauthorized"}), 403
+
+        poster = execute_query(
+            f"SELECT name FROM `{TABLE_ALUMNI_USERS}` WHERE id = %s",
+            (user_id,),
+            fetch_one=True
+        )
+        poster_name = poster["name"] if poster else "An alumnus"
+
+        execute_query(
+            f"DELETE FROM `{TABLE_JOBS}` WHERE id = %s",
+            (job_id,)
+        )
+
+        notification_message = f"{existing['role']} role at {existing['company']} has been posted by {poster_name}."
+        execute_query(
+            "DELETE FROM notifications WHERE type = 'job' AND message = %s",
+            (notification_message,)
+        )
+
+        return jsonify({"success": True, "message": "Job deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@posts_bp.route("/achievement/<int:achievement_id>", methods=["DELETE"])
+def delete_achievement(achievement_id):
+    user_id = get_authenticated_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        existing = execute_query(
+            f"SELECT * FROM `{TABLE_ACHIEVEMENTS}` WHERE id=%s",
+            (achievement_id,),
+            fetch_one=True
+        )
+        if not existing:
+            return jsonify({"error": "Achievement not found"}), 404
+        if existing.get("user_id") != user_id:
+            return jsonify({"error": "Unauthorized"}), 403
+
+        execute_query(
+            f"DELETE FROM `{TABLE_ACHIEVEMENTS}` WHERE id = %s",
+            (achievement_id,)
+        )
+
+        return jsonify({"success": True, "message": "Achievement deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

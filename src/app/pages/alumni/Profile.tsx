@@ -26,6 +26,8 @@ import {
   updateUserProfile,
   updateJob,
   updateAchievement,
+  deleteJob,
+  deleteAchievement,
   uploadProfileImage,
   deleteProfileImage,
   type JobPost,
@@ -94,6 +96,14 @@ export default function Profile() {
   const [deletingImage, setDeletingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    show: boolean;
+    type: "job" | "achievement";
+    id: number;
+    title: string;
+  } | null>(null);
+  const [savingJobId, setSavingJobId] = useState<number | null>(null);
+  const [savingAchievementId, setSavingAchievementId] = useState<number | null>(null);
 
   const awardsSectionRef = useRef<HTMLDivElement | null>(null);
   const educationSectionRef = useRef<HTMLDivElement | null>(null);
@@ -121,6 +131,32 @@ export default function Profile() {
     setTimeout(() => {
       ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
+  }
+
+  async function handleDeleteConfirmSubmit() {
+    if (!deleteConfirm) return;
+    const { type, id } = deleteConfirm;
+    setDeleteConfirm(null);
+    
+    if (type === "job") {
+      const response = await deleteJob(id);
+      if (response.success) {
+        await fetchActivity();
+        setMessage("Job posting deleted successfully.");
+        setError("");
+      } else {
+        setError(response.error || "Failed to delete job posting.");
+      }
+    } else {
+      const response = await deleteAchievement(id);
+      if (response.success) {
+        await fetchActivity();
+        setMessage("Achievement deleted successfully.");
+        setError("");
+      } else {
+        setError(response.error || "Failed to delete achievement.");
+      }
+    }
   }
 
   async function fetchProfile() {
@@ -298,6 +334,15 @@ export default function Profile() {
       return;
     }
 
+    setProfileData((prev) => ({
+      ...prev,
+      awards: payload.awards,
+      honorary_degrees: payload.honorary_degrees,
+      books_authored: payload.books_authored,
+      other_accolades: payload.other_accolades,
+      previous_experience: payload.previous_experience,
+    }));
+
     setMessage("Profile updates saved successfully.");
     setSaving(false);
     setIsEditing(false);
@@ -455,14 +500,21 @@ export default function Profile() {
                   </p>
                 </div>
                 {isEditing && (
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    <Check className="w-4 h-4" />
-                    {saving ? "Saving..." : "Save Updates"}
-                  </button>
+                  <>
+                    {saving ? (
+                      <div className="flex justify-center items-center py-2 px-4 bg-slate-50 border border-slate-100 rounded-xl">
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleSave}
+                        className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-blue-700"
+                      >
+                        <Check className="w-4 h-4" />
+                        Save Updates
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -530,7 +582,7 @@ export default function Profile() {
                   ) : (
                     <div className="space-y-4">
                       {profileData.previous_experience.map((experience, index) => (
-                        <div key={`${experience.company}-${index}`} className="rounded-3xl border border-gray-200 bg-white p-4">
+                        <div key={`exp-${index}`} className="rounded-3xl border border-gray-200 bg-white p-4">
                           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                             <div className="grid gap-3 sm:grid-cols-3 sm:gap-4 flex-1">
                               <FieldInput
@@ -757,27 +809,47 @@ export default function Profile() {
                           <h4 className="text-lg font-semibold text-gray-900">{job.role} at {job.company}</h4>
                           <p className="text-sm text-gray-600">{job.location} • {job.job_type}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingJobId(job.id);
-                            setEditingAchievementId(null);
-                            setProfileJobErrors({});
-                            setJobDraft({
-                              company: job.company,
-                              role: job.role,
-                              location: job.location,
-                              job_type: job.job_type,
-                              salary: job.salary,
-                              description: job.description,
-                              requirements: job.requirements,
-                              apply_link: job.apply_link,
-                            });
-                          }}
-                          className="rounded-2xl border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
-                        >
-                          Edit
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingJobId(job.id);
+                              setEditingAchievementId(null);
+                              setProfileJobErrors({});
+                              setJobDraft({
+                                company: job.company,
+                                role: job.role,
+                                location: job.location,
+                                job_type: job.job_type,
+                                salary: job.salary,
+                                description: job.description,
+                                requirements: job.requirements,
+                                apply_link: job.apply_link,
+                              });
+                            }}
+                            className="flex items-center justify-center rounded-2xl border border-blue-300 bg-blue-50 p-2 text-blue-700 hover:bg-blue-100"
+                            aria-label="Edit job posting"
+                            title="Edit job posting"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleteConfirm({
+                                show: true,
+                                type: "job",
+                                id: job.id,
+                                title: `${job.role} at ${job.company}`,
+                              });
+                            }}
+                            className="flex items-center justify-center rounded-2xl border border-red-300 bg-red-50 p-2 text-red-700 hover:bg-red-100"
+                            aria-label="Delete job posting"
+                            title="Delete job posting"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
 
                       {editingJobId === job.id ? (
@@ -862,53 +934,63 @@ export default function Profile() {
                             />
                           </div>
                           <div className="flex flex-wrap gap-3">
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                const validation = validateJobPost({
-                                  company: jobDraft.company || "",
-                                  role: jobDraft.role || "",
-                                  location: jobDraft.location || "",
-                                  salary: jobDraft.salary || "",
-                                  description: jobDraft.description || "",
-                                  applyLink: jobDraft.apply_link || "",
-                                });
-                                if (!validation.isValid) {
-                                  setProfileJobErrors(validation.errors);
-                                  return;
-                                }
-                                setProfileJobErrors({});
+                            {savingJobId === job.id ? (
+                              <div className="flex justify-center items-center py-2 px-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
+                              </div>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const validation = validateJobPost({
+                                      company: jobDraft.company || "",
+                                      role: jobDraft.role || "",
+                                      location: jobDraft.location || "",
+                                      salary: jobDraft.salary || "",
+                                      description: jobDraft.description || "",
+                                      applyLink: jobDraft.apply_link || "",
+                                    });
+                                    if (!validation.isValid) {
+                                      setProfileJobErrors(validation.errors);
+                                      return;
+                                    }
+                                    setProfileJobErrors({});
 
-                                const response = await updateJob(job.id, {
-                                  company: jobDraft.company,
-                                  role: jobDraft.role,
-                                  location: jobDraft.location,
-                                  job_type: jobDraft.job_type,
-                                  salary: jobDraft.salary,
-                                  description: jobDraft.description,
-                                  requirements: jobDraft.requirements,
-                                  apply_link: jobDraft.apply_link,
-                                });
-                                if (response.success) {
-                                  await fetchActivity();
-                                  setEditingJobId(null);
-                                  setMessage("Job updated successfully.");
-                                  setError("");
-                                } else {
-                                  setError(response.error || "Unable to update job.");
-                                }
-                              }}
-                              className="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                            >
-                              Save Job
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingJobId(null)}
-                              className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-                            >
-                              Cancel
-                            </button>
+                                    setSavingJobId(job.id);
+                                    const response = await updateJob(job.id, {
+                                      company: jobDraft.company,
+                                      role: jobDraft.role,
+                                      location: jobDraft.location,
+                                      job_type: jobDraft.job_type,
+                                      salary: jobDraft.salary,
+                                      description: jobDraft.description,
+                                      requirements: jobDraft.requirements,
+                                      apply_link: jobDraft.apply_link,
+                                    });
+                                    if (response.success) {
+                                      await fetchActivity();
+                                      setEditingJobId(null);
+                                      setMessage("Job updated successfully.");
+                                      setError("");
+                                    } else {
+                                      setError(response.error || "Unable to update job.");
+                                    }
+                                    setSavingJobId(null);
+                                  }}
+                                  className="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                                >
+                                  Save Job
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingJobId(null)}
+                                  className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       ) : null}
@@ -923,21 +1005,41 @@ export default function Profile() {
                           <h4 className="text-lg font-semibold text-gray-900">{achievement.title}</h4>
                           <p className="text-sm text-gray-600">Posted by {achievement.poster_name}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingAchievementId(achievement.id);
-                            setEditingJobId(null);
-                            setAchievementDraft({
-                              title: achievement.title,
-                              description: achievement.description,
-                              image_url: achievement.image_url,
-                            });
-                          }}
-                          className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100"
-                        >
-                          Edit
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAchievementId(achievement.id);
+                              setEditingJobId(null);
+                              setAchievementDraft({
+                                title: achievement.title,
+                                description: achievement.description,
+                                image_url: achievement.image_url,
+                              });
+                            }}
+                            className="flex items-center justify-center rounded-2xl border border-amber-300 bg-amber-50 p-2 text-amber-700 hover:bg-amber-100"
+                            aria-label="Edit achievement"
+                            title="Edit achievement"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleteConfirm({
+                                show: true,
+                                type: "achievement",
+                                id: achievement.id,
+                                title: achievement.title,
+                              });
+                            }}
+                            className="flex items-center justify-center rounded-2xl border border-red-300 bg-red-50 p-2 text-red-700 hover:bg-red-100"
+                            aria-label="Delete achievement"
+                            title="Delete achievement"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
 
                       {achievement.image_url && (
@@ -988,34 +1090,44 @@ export default function Profile() {
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-3">
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                const response = await updateAchievement(achievement.id, {
-                                  title: achievementDraft.title,
-                                  description: achievementDraft.description,
-                                  image_url: achievementDraft.image_url ?? undefined,
-                                });
-                                if (response.success) {
-                                  await fetchActivity();
-                                  setEditingAchievementId(null);
-                                  setMessage("Achievement updated successfully.");
-                                  setError("");
-                                } else {
-                                  setError(response.error || "Unable to update achievement.");
-                                }
-                              }}
-                              className="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                            >
-                              Save Achievement
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingAchievementId(null)}
-                              className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-                            >
-                              Cancel
-                            </button>
+                            {savingAchievementId === achievement.id ? (
+                              <div className="flex justify-center items-center py-2 px-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
+                              </div>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    setSavingAchievementId(achievement.id);
+                                    const response = await updateAchievement(achievement.id, {
+                                      title: achievementDraft.title,
+                                      description: achievementDraft.description,
+                                      image_url: achievementDraft.image_url ?? undefined,
+                                    });
+                                    if (response.success) {
+                                      await fetchActivity();
+                                      setEditingAchievementId(null);
+                                      setMessage("Achievement updated successfully.");
+                                      setError("");
+                                    } else {
+                                      setError(response.error || "Unable to update achievement.");
+                                    }
+                                    setSavingAchievementId(null);
+                                  }}
+                                  className="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                                >
+                                  Save Achievement
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingAchievementId(null)}
+                                  className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       ) : null}
@@ -1027,6 +1139,39 @@ export default function Profile() {
           </div>
         </div>
         </>
+      )}
+
+      {deleteConfirm && deleteConfirm.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 transform transition-all scale-100 animate-scale-in">
+            <div className="flex items-center gap-4 text-red-600 mb-4">
+              <div className="p-3 bg-red-50 rounded-2xl">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Delete Confirmation</h3>
+            </div>
+            <p className="text-gray-600 mb-6 text-sm">
+              Are you sure you want to delete the {deleteConfirm.type === "job" ? "job posting" : "achievement"}{" "}
+              <strong className="text-gray-900">"{deleteConfirm.title}"</strong>? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(null)}
+                className="px-5 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-sm font-semibold text-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirmSubmit}
+                className="px-5 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-sm font-semibold text-white transition-colors"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

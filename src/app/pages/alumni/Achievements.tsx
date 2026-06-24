@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trophy, Calendar } from "lucide-react";
+import { Trophy, Calendar, X } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 
 interface Achievement {
@@ -15,6 +15,7 @@ interface Achievement {
 export default function ViewAchievements() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAchievements = async () => {
@@ -77,7 +78,12 @@ export default function ViewAchievements() {
             <h2 className="text-xl font-bold text-gray-900 mb-3">{achievement.title}</h2>
             <p className="text-gray-700 leading-relaxed mb-4">{achievement.description}</p>
             {achievement.image_url && (
-              <img src={achievement.image_url} alt="Achievement" className="w-full max-h-96 object-cover rounded-xl mb-4" />
+              <img
+                src={achievement.image_url}
+                alt="Achievement"
+                onClick={() => setSelectedImage(achievement.image_url)}
+                className="w-full max-h-96 object-cover rounded-xl mb-4 cursor-zoom-in hover:opacity-95 transition-all duration-300"
+              />
             )}
 
             <div className="flex items-center pt-4 border-t border-gray-100">
@@ -93,6 +99,28 @@ export default function ViewAchievements() {
           </div>
         )))}
       </div>
+
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out transition-all duration-300"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-5xl max-h-[90vh] w-full h-full flex items-center justify-center pointer-events-none">
+            <img
+              src={selectedImage}
+              alt="Fullscreen Achievement"
+              className="max-w-full max-h-full object-contain rounded-xl shadow-2xl pointer-events-auto"
+            />
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white rounded-full p-2.5 transition-colors pointer-events-auto"
+              title="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -31,6 +31,7 @@ export default function DegreesManagement() {
   // Form states
   const [newDegree, setNewDegree] = useState({ degree_name: "", branch_name: "" });
   const [editingMapping, setEditingMapping] = useState<AdminDegreeMapping | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     void fetchDegrees();
@@ -50,6 +51,7 @@ export default function DegreesManagement() {
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setError("");
     const degName = newDegree.degree_name.trim();
     const branchName = newDegree.branch_name.trim() || null;
@@ -59,6 +61,7 @@ export default function DegreesManagement() {
       return;
     }
 
+    setSubmitting(true);
     const response = await addAdminDegree({
       degree_name: degName,
       branch_name: branchName,
@@ -71,11 +74,12 @@ export default function DegreesManagement() {
     } else {
       setError(response.error);
     }
+    setSubmitting(false);
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingMapping) return;
+    if (!editingMapping || submitting) return;
 
     setError("");
     const degName = editingMapping.degree_name.trim();
@@ -86,6 +90,7 @@ export default function DegreesManagement() {
       return;
     }
 
+    setSubmitting(true);
     const response = await updateAdminDegree(editingMapping.id, {
       degree_name: degName,
       branch_name: branchName,
@@ -99,6 +104,7 @@ export default function DegreesManagement() {
     } else {
       setError(response.error);
     }
+    setSubmitting(false);
   };
 
   const handleToggleHide = async (mapping: AdminDegreeMapping) => {
@@ -329,20 +335,28 @@ export default function DegreesManagement() {
                 </p>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 text-gray-700 text-sm font-medium transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md"
-                >
-                  Add Option
-                </button>
+              <div className="flex gap-3 pt-2 justify-center">
+                {submitting ? (
+                  <div className="flex justify-center items-center py-2.5 flex-1 bg-slate-50 border border-slate-100 rounded-xl">
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-purple-600"></div>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddModalOpen(false)}
+                      className="flex-1 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 text-gray-700 text-sm font-medium transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md"
+                    >
+                      Add Option
+                    </button>
+                  </>
+                )}
               </div>
             </form>
           </div>
@@ -409,23 +423,31 @@ export default function DegreesManagement() {
                 </label>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditModalOpen(false);
-                    setEditingMapping(null);
-                  }}
-                  className="flex-1 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 text-gray-700 text-sm font-medium transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md"
-                >
-                  Save Changes
-                </button>
+              <div className="flex gap-3 pt-2 justify-center">
+                {submitting ? (
+                  <div className="flex justify-center items-center py-2.5 flex-1 bg-slate-50 border border-slate-100 rounded-xl">
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-purple-600"></div>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditModalOpen(false);
+                        setEditingMapping(null);
+                      }}
+                      className="flex-1 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 text-gray-700 text-sm font-medium transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md"
+                    >
+                      Save Changes
+                    </button>
+                  </>
+                )}
               </div>
             </form>
           </div>

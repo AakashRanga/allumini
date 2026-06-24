@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Trophy, Briefcase, Sparkles, MapPin, IndianRupee, ExternalLink, Loader2 } from "lucide-react";
+import { Trophy, Briefcase, Sparkles, MapPin, IndianRupee, ExternalLink, Loader2, X } from "lucide-react";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { getJobs, getAchievements, JobPost, AchievementPost } from "@/lib/api";
 import { formatSalary } from "@/utils/validation";
@@ -58,6 +58,7 @@ export default function AlumniHome() {
   const [feedData, setFeedData] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFeedData = async () => {
@@ -292,7 +293,8 @@ export default function AlumniHome() {
                         <ImageWithFallback
                           src={item.image}
                           alt={`Achievement by ${item.author}`}
-                          className="w-full h-64 object-cover"
+                          onClick={() => setSelectedImage(item.image)}
+                          className="w-full h-64 object-cover cursor-zoom-in hover:opacity-95 transition-all duration-300"
                         />
                       </div>
                     )}
@@ -309,6 +311,28 @@ export default function AlumniHome() {
           <p className="text-gray-500">
             No {activeFilter === "all" ? "items" : activeFilter === "job" ? "job opportunities" : "achievements"} to display
           </p>
+        </div>
+      )}
+
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out transition-all duration-300"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-5xl max-h-[90vh] w-full h-full flex items-center justify-center pointer-events-none">
+            <img
+              src={selectedImage}
+              alt="Fullscreen Achievement"
+              className="max-w-full max-h-full object-contain rounded-xl shadow-2xl pointer-events-auto"
+            />
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white rounded-full p-2.5 transition-colors pointer-events-auto"
+              title="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
       )}
     </div>

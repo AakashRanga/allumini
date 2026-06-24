@@ -24,6 +24,7 @@ export default function CreatePost() {
   });
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
   const getUserId = () => {
     const session = getAuthSession();
@@ -34,6 +35,7 @@ export default function CreatePost() {
 
   const handleJobSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     
     // Frontend validation
     const validation = validateJobPost(jobFormData);
@@ -43,6 +45,7 @@ export default function CreatePost() {
     }
     setJobErrors({});
 
+    setSubmitting(true);
     try {
       const response = await fetch(`${API_BASE_URL}/posts/job`, {
         method: "POST",
@@ -58,32 +61,35 @@ export default function CreatePost() {
     } catch (error) {
       console.error(error);
       alert("Error posting job");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const newFiles = Array.from(files);
-      setSelectedImages((prev) => [...prev, ...newFiles]);
+      const file = files[0];
+      setSelectedImages([file]);
 
-      newFiles.forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreviews((prev) => [...prev, reader.result as string]);
-        };
-        reader.readAsDataURL(file);
-      });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews([reader.result as string]);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const removeImage = (index: number) => {
-    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    setSelectedImages([]);
+    setImagePreviews([]);
   };
 
   const handleAchievementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
+
+    setSubmitting(true);
     try {
       const response = await fetch(`${API_BASE_URL}/posts/achievement`, {
         method: "POST",
@@ -91,7 +97,7 @@ export default function CreatePost() {
         body: JSON.stringify({
           ...achievementFormData,
           user_id: getUserId(),
-          imageUrls: imagePreviews.length > 0 ? imagePreviews : []
+          imageUrl: imagePreviews.length > 0 ? imagePreviews[0] : ""
         }),
       });
       if (response.ok) {
@@ -102,6 +108,8 @@ export default function CreatePost() {
     } catch (error) {
       console.error(error);
       alert("Error posting achievement");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -293,19 +301,27 @@ export default function CreatePost() {
             </div>
 
             <div className="flex gap-3">
-              <button
-                type="submit"
-                className="flex-1 py-3.5 bg-[#0A66C2] text-white rounded-xl hover:bg-[#004182] transition-all shadow-lg hover:shadow-xl font-medium"
-              >
-                Submit Job Posting
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate("/alumni")}
-                className="px-8 py-3.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all font-medium"
-              >
-                Cancel
-              </button>
+              {submitting ? (
+                <div className="flex justify-center items-center py-3.5 flex-1 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="animate-spin rounded-full h-7 w-7 border-t-2 border-b-2 border-[#0A66C2]"></div>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3.5 bg-[#0A66C2] text-white rounded-xl hover:bg-[#004182] transition-all shadow-lg hover:shadow-xl font-medium"
+                  >
+                    Submit Job Posting
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/alumni")}
+                    className="px-8 py-3.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all font-medium"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
             </div>
           </form>
         </div>
@@ -341,11 +357,10 @@ export default function CreatePost() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Images (Optional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Image (Optional)</label>
               <input
                 type="file"
                 accept="image/*"
-                multiple
                 onChange={handleImageChange}
                 className="hidden"
                 id="achievement-image-upload"
@@ -357,37 +372,26 @@ export default function CreatePost() {
                 >
                   <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                   <p className="text-gray-600 mb-1">Click to upload or drag and drop</p>
-                  <p className="text-sm text-gray-500">PNG, JPG up to 10MB (multiple files allowed)</p>
+                  <p className="text-sm text-gray-500">PNG, JPG up to 10MB</p>
                 </label>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-xl border border-gray-300"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+                  <div className="relative group max-w-sm">
+                    <img
+                      src={imagePreviews[0]}
+                      alt="Preview"
+                      className="w-full h-48 object-cover rounded-xl border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(0)}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
-                  <label
-                    htmlFor="achievement-image-upload"
-                    className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-[#0A66C2] transition-colors cursor-pointer block"
-                  >
-                    <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
-                    <p className="text-sm text-gray-500">Add more images</p>
-                  </label>
                 </div>
               )}
             </div>
@@ -399,19 +403,27 @@ export default function CreatePost() {
             </div>
 
             <div className="flex gap-3">
-              <button
-                type="submit"
-                className="flex-1 py-3.5 bg-[#0A66C2] text-white rounded-xl hover:bg-[#004182] transition-all shadow-lg hover:shadow-xl font-medium"
-              >
-                Submit Achievement
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate("/alumni")}
-                className="px-8 py-3.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all font-medium"
-              >
-                Cancel
-              </button>
+              {submitting ? (
+                <div className="flex justify-center items-center py-3.5 flex-1 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="animate-spin rounded-full h-7 w-7 border-t-2 border-b-2 border-[#0A66C2]"></div>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3.5 bg-[#0A66C2] text-white rounded-xl hover:bg-[#004182] transition-all shadow-lg hover:shadow-xl font-medium"
+                  >
+                    Submit Achievement
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/alumni")}
+                    className="px-8 py-3.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all font-medium"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
             </div>
           </form>
         </div>
