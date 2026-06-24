@@ -13,7 +13,7 @@ SMTP_EMAIL = os.getenv("smtp_email")
 SMTP_PASSWORD = os.getenv("smtp_password")
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:7777")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8188")
 
 def send_otp_email(to_email: str, otp: str, name: str):
     """Send OTP verification email"""

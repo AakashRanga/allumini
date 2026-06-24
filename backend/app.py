@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 base_dir = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(base_dir, '.env'))
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:7777")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8188")
 
 app = Flask(__name__)
 
@@ -55,7 +55,8 @@ def serve_newsletter_attachment(filename):
 def handle_options():
     if request.method == "OPTIONS":
         response = app.make_default_options_response()
-        response.headers["Access-Control-Allow-Origin"] = FRONTEND_URL
+        origin = request.headers.get("Origin")
+        response.headers["Access-Control-Allow-Origin"] = origin if origin else FRONTEND_URL
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,X-Auth-User-Id,X-Auth-Role"
         response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
@@ -63,7 +64,8 @@ def handle_options():
 
 @app.after_request
 def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = FRONTEND_URL
+    origin = request.headers.get("Origin")
+    response.headers["Access-Control-Allow-Origin"] = origin if origin else FRONTEND_URL
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,X-Auth-User-Id,X-Auth-Role"
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
@@ -302,5 +304,5 @@ app.register_blueprint(notifications_bp, url_prefix="/notifications")
 
 if __name__ == "__main__":
     init_db()
-    port = int(os.getenv("PORT", "5555"))
-    app.run(debug=True, port=port)
+    port = int(os.getenv("PORT", "8187"))
+    app.run(host="0.0.0.0", port=port, debug=True)

@@ -55,17 +55,44 @@ export default function DocumentViewer({
 
   if (!current) return null;
 
-  const getFileUrl = (url: string) => `${baseUrl}/${attachmentBasePath}/${url}`;
+  const getFileUrl = (url: string) => {
+    const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
+    const cleanBasePath = attachmentBasePath.replace(/^\/+/, "").replace(/\/+$/, "");
+    return `${cleanBaseUrl}/${cleanBasePath}/${url}`;
+  };
+
   const isImage = (type: string) => ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(type.toLowerCase());
   const isPdf = (type: string) => type.toLowerCase() === "pdf";
   const isOffice = (type: string) => ["ppt", "pptx", "doc", "docx", "xls", "xlsx"].includes(type.toLowerCase());
 
   const getOfficeUrl = (url: string) => {
     const fullUrl = getFileUrl(url);
-    if (fullUrl.includes("localhost") || fullUrl.includes("127.0.0.1")) {
+    try {
+      const parsedUrl = new URL(fullUrl);
+      // Microsoft Office Viewer strictly requires HTTPS to fetch documents securely
+      if (parsedUrl.protocol !== "https:") {
+        return null;
+      }
+
+      const hostname = parsedUrl.hostname;
+      // Check if hostname is an IP address or localhost
+      const isIpOrLocal = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname) || 
+                          hostname === "localhost" || 
+                          hostname === "127.0.0.1" || 
+                          hostname === "[::1]";
+      if (isIpOrLocal) {
+        return null;
+      }
+
+      // Check if there is a custom port (standard HTTPS is 443, empty is default)
+      if (parsedUrl.port && parsedUrl.port !== "443" && parsedUrl.port !== "") {
+        return null;
+      }
+
+      return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`;
+    } catch (e) {
       return null;
     }
-    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`;
   };
 
   const officeUrl = isOffice(current.type) ? getOfficeUrl(current.url) : null;
@@ -253,8 +280,8 @@ export default function DocumentViewer({
             </div>
             <h4 className={`text-2xl font-black mb-3 ${isFullscreen ? "text-white" : "text-slate-800"}`}>{current.name}</h4>
             <p className={`mb-8 leading-relaxed ${isFullscreen ? "text-slate-400" : "text-slate-500"}`}>
-              This {current.type.toUpperCase()} document is ready for review. Since you are in a local environment,
-              please download the file to view it with your preferred application.
+              This {current.type.toUpperCase()} document is ready for review. Since previewing is not available in this environment,
+              please download the file to view it.
             </p>
             <div className="space-y-4">
               <button
