@@ -27,6 +27,7 @@ import Messages from "./pages/alumni/Messages";
 import Profile from "./pages/alumni/Profile";
 import Newsletter from "./pages/alumni/Newsletter";
 import AlumniNotifications from "./pages/alumni/Notifications";
+import Community from "./pages/alumni/Community";
 
 import NotFound from "./pages/NotFound";
 import ErrorPage from "./pages/ErrorPage";
@@ -98,6 +99,7 @@ export const router = createBrowserRouter([
       { path: "newsletter", Component: Newsletter },
       { path: "profile", Component: Profile },
       { path: "notifications", Component: AlumniNotifications },
+      { path: "community", Component: Community },
     ],
   },
   {

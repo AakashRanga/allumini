@@ -798,3 +798,7 @@ export async function deleteAdminDegree(id: number) {
     method: "DELETE",
   });
 }
+
+export async function getCommunityMembers() {
+  return request<UserProfile[]>("/auth/community", { method: "GET" });
+}

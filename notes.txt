@@ -1,0 +1,1 @@
+where ever we are using form submit in alumni and admin pages like Job Opportunity, Achievement, edit profile all contents, admin panel gurupadigam compose and edit message, newsletter new and edit, Add Degree Mapping and edit for all this form submit action i need submit button to be hidden set loader animation untill that form is submitted to db

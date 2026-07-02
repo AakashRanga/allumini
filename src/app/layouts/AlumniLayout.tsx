@@ -10,6 +10,7 @@ import {
   User,
   Bell,
   LogOut,
+  Users,
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import logoSrc from "../../imports/logo.png";
@@ -23,6 +24,7 @@ const navItems = [
   { path: "/alumni/jobs", label: "Jobs", icon: Briefcase },
   { path: "/alumni/messages", label: "Messages", icon: MessageCircle },
   { path: "/alumni/newsletter", label: "Newsletter", icon: Newspaper },
+  { path: "/alumni/community", label: "Community", icon: Users },
   { path: "/alumni/profile", label: "Profile", icon: User },
 ];
 

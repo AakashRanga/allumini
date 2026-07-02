@@ -896,3 +896,48 @@ def admin_delete_degree(mapping_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@auth_bp.route("/community", methods=["GET"])
+def get_community():
+    user_id = get_authenticated_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        query = f"""
+        SELECT 
+            id, 
+            name, 
+            email, 
+            contact_number, 
+            academic_details, 
+            specialization, 
+            awards, 
+            honorary_degrees, 
+            books_authored, 
+            other_accolades, 
+            previous_experience, 
+            profile_image
+        FROM {TABLE_ALUMNI_USERS}
+        WHERE role != 'admin' AND is_approved = 1
+        ORDER BY name ASC
+        """
+        rows = execute_query(query)
+
+        json_fields = ["academic_details", "awards", "honorary_degrees", "books_authored", "other_accolades", "previous_experience"]
+        for row in rows:
+            for key in json_fields:
+                value = row.get(key)
+                if value is None:
+                    row[key] = []
+                else:
+                    try:
+                        row[key] = json.loads(value) if isinstance(value, str) else value
+                    except Exception:
+                        row[key] = []
+
+        return jsonify(rows), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
