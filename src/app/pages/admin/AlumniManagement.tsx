@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { API_BASE_URL, getAlumniProfileById, type UserProfile } from "@/lib/api";
 import ProfileViewModal from "@/app/components/ProfileViewModal";
+import AdminMentorship from "./AdminMentorship";
 
 interface Alumni {
   id: number;
@@ -31,6 +32,7 @@ interface Alumni {
 }
 
 export default function AlumniManagement() {
+  const [activeTab, setActiveTab] = useState<"directory" | "mentorship">("directory");
   const [alumniData, setAlumniData] = useState<Alumni[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlumniMember, setSelectedAlumniMember] = useState<UserProfile | null>(null);
@@ -73,10 +75,39 @@ export default function AlumniManagement() {
     <div className="max-w-7xl mx-auto space-y-6">
       
       {/* Header section */}
-      <div>
-        <h3 className="text-2xl font-black text-slate-800 tracking-tight">Alumni Management</h3>
-        <p className="text-slate-500 text-sm mt-1">Monitor, verify, and examine alumni profiles and contributions.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
+        <div>
+          <h3 className="text-2xl font-black text-slate-800 tracking-tight">Alumni Management</h3>
+          <p className="text-slate-500 text-sm mt-1">Monitor, verify, examine alumni profiles, and manage mentorship.</p>
+        </div>
+
+        {/* Toggle Pills */}
+        <div className="flex bg-slate-100 p-1 rounded-2xl shrink-0 self-start sm:self-center">
+          <button
+            onClick={() => setActiveTab("directory")}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+              activeTab === "directory"
+                ? "bg-white text-purple-600 shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Alumni Directory
+          </button>
+          <button
+            onClick={() => setActiveTab("mentorship")}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+              activeTab === "mentorship"
+                ? "bg-white text-purple-600 shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Mentorship Management
+          </button>
+        </div>
       </div>
+
+      {activeTab === "directory" ? (
+        <>
 
       {/* KPI Overview row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -273,6 +304,10 @@ export default function AlumniManagement() {
           </div>
         )}
       </div>
+        </>
+      ) : (
+        <AdminMentorship />
+      )}
 
       {/* Modal Profile Viewer */}
       <ProfileViewModal

@@ -1,4 +1,4 @@
-import { getAuthSession } from "@/lib/session";
+import { getAuthSession, clearAuthSession } from "@/lib/session";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5555";
 
@@ -62,6 +62,12 @@ async function request<T>(path: string, options: RequestInit): Promise<ApiRespon
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearAuthSession();
+      if (typeof window !== "undefined") {
+        window.location.href = "/auth/login";
+      }
+    }
     return {
       success: false,
       error: data?.error || response.statusText || String(data) || "Unknown error",
@@ -830,4 +836,91 @@ export async function getUserActivity(targetUserId: number) {
 
 export async function getAlumniProfileById(targetUserId: number) {
   return request<UserProfile>(`/auth/profile/${targetUserId}`, { method: "GET" });
+}
+
+export interface MentorshipSession {
+  id: number;
+  topic: string;
+  description: string | null;
+  date: string;
+  venue: string;
+  banner_image: string | null;
+  details: string | null;
+  mentorship_type: "online" | "offline";
+  duration: number;
+  target_audience: string | null;
+  max_attendees: number | null;
+  meeting_link: string | null;
+  status: "open" | "assigned" | "completed";
+  mentor_id: number | null;
+  mentor_name?: string | null;
+  mentor_email?: string | null;
+  mentor_image?: string | null;
+  user_request_status?: "pending" | "approved" | "rejected" | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MentorshipRequest {
+  request_id: number;
+  request_status: "pending" | "approved" | "rejected";
+  created_at: string;
+  alumni_id: number;
+  alumni_name: string;
+  alumni_email: string;
+  alumni_image: string | null;
+  alumni_specialization: string | null;
+}
+
+export async function getMentorshipSessions() {
+  return request<MentorshipSession[]>("/mentorship/sessions", { method: "GET" });
+}
+
+export async function createMentorshipSession(formData: FormData) {
+  const authSession = getAuthSession();
+  const response = await fetch(`${API_BASE_URL}/mentorship/sessions`, {
+    method: "POST",
+    headers: {
+      "X-Auth-User-Id": authSession?.userId || "",
+      "X-Auth-Role": authSession?.role || "",
+    },
+    body: formData,
+  });
+  if (response.status === 401) {
+    clearAuthSession();
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/login";
+    }
+  }
+  return response.json();
+}
+
+export async function requestMentorship(sessionId: number) {
+  return request<{ success: boolean; message: string }>(`/mentorship/sessions/${sessionId}/request`, {
+    method: "POST",
+  });
+}
+
+export async function getMentorshipRequests(sessionId: number) {
+  return request<MentorshipRequest[]>(`/mentorship/sessions/${sessionId}/requests`, {
+    method: "GET",
+  });
+}
+
+export async function approveMentorshipRequest(reqId: number) {
+  return request<{ success: boolean; message: string }>(`/mentorship/requests/${reqId}/approve`, {
+    method: "POST",
+  });
+}
+
+export async function rejectMentorshipRequest(reqId: number) {
+  return request<{ success: boolean; message: string }>(`/mentorship/requests/${reqId}/reject`, {
+    method: "POST",
+  });
+}
+
+export async function deleteMentorshipSession(sessionId: number) {
+  return request<{ success: boolean; message: string }>(`/mentorship/sessions/${sessionId}`, {
+    method: "DELETE",
+  });
 }

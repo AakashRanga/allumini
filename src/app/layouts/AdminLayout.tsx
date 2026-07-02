@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Mail,
   GraduationCap,
+  BookOpen,
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { clearAuthSession, refreshAuthSessionActivity } from "@/lib/session";

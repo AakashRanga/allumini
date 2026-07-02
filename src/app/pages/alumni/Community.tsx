@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
 import {
   Search,
   Filter,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { getCommunityMembers, type UserProfile, API_BASE_URL } from "@/lib/api";
 import ProfileViewModal from "../../components/ProfileViewModal";
+import AlumniMentorship from "./AlumniMentorship";
 
 function getInitials(name: string): string {
   return name
@@ -29,6 +31,20 @@ function getInitials(name: string): string {
 }
 
 export default function Community() {
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"directory" | "mentorship">(
+    tabParam === "mentorship" ? "mentorship" : "directory"
+  );
+
+  useEffect(() => {
+    if (tabParam === "mentorship") {
+      setActiveTab("mentorship");
+    } else {
+      setActiveTab("directory");
+    }
+  }, [tabParam]);
+
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +125,33 @@ export default function Community() {
         </div>
       </div>
 
-      {/* Filters & Search Section */}
+      {/* Sub-tab Switcher */}
+      <div className="flex bg-gray-100 p-1.5 rounded-2xl w-fit">
+        <button
+          onClick={() => setActiveTab("directory")}
+          className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+            activeTab === "directory"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          Alumni Directory
+        </button>
+        <button
+          onClick={() => setActiveTab("mentorship")}
+          className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+            activeTab === "mentorship"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          Mentorship Sessions
+        </button>
+      </div>
+
+      {activeTab === "directory" ? (
+        <>
+          {/* Filters & Search Section */}
       <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
@@ -260,6 +302,10 @@ export default function Community() {
             );
           })}
         </div>
+      )}
+        </>
+      ) : (
+        <AlumniMentorship />
       )}
 
       {/* Modal Profile Viewer */}

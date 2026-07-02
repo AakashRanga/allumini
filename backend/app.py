@@ -5,6 +5,7 @@ from routes.posts import posts_bp
 from routes.gurupadigam import gurupadigam_bp
 from routes.newsletters import newsletter_bp
 from routes.notifications import notifications_bp
+from routes.mentorship import mentorship_bp
 from db import get_connection
 from models import (
     CREATE_ALUMNI_USERS_TABLE, TABLE_ALUMNI_USERS,
@@ -14,7 +15,9 @@ from models import (
     CREATE_GURUPADIGAM_MESSAGES_TABLE, TABLE_GURUPADIGAM_MESSAGES,
     CREATE_NEWSLETTERS_TABLE, TABLE_NEWSLETTERS,
     CREATE_NOTIFICATIONS_TABLE, TABLE_NOTIFICATIONS,
-    CREATE_DEGREES_TABLE, TABLE_DEGREES
+    CREATE_DEGREES_TABLE, TABLE_DEGREES,
+    CREATE_MENTORSHIP_SESSIONS_TABLE, TABLE_MENTORSHIP_SESSIONS,
+    CREATE_MENTORSHIP_REQUESTS_TABLE, TABLE_MENTORSHIP_REQUESTS
 )
 import os
 from dotenv import load_dotenv
@@ -50,6 +53,14 @@ def serve_gurupadigam_attachment(filename):
 @app.route('/newsletter-attachments/<filename>')
 def serve_newsletter_attachment(filename):
     return send_from_directory(NEWSLETTER_ATTACHMENTS_DIR, filename)
+
+# Mentorship banners configuration
+MENTORSHIP_BANNERS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mentorship_banners')
+os.makedirs(MENTORSHIP_BANNERS_DIR, exist_ok=True)
+
+@app.route('/mentorship-banners/<filename>')
+def serve_mentorship_banner(filename):
+    return send_from_directory(MENTORSHIP_BANNERS_DIR, filename)
 
 @app.before_request
 def handle_options():
@@ -204,6 +215,25 @@ def init_db():
             print(f"Adding missing column to {TABLE_DEGREES}: {col_name}")
             cursor.execute(f"ALTER TABLE `{TABLE_DEGREES}` ADD COLUMN {col_name} {col_def}")
 
+    # Create mentorship_sessions table if not exists
+    cursor.execute(CREATE_MENTORSHIP_SESSIONS_TABLE)
+    expected_columns = parse_columns_from_sql(CREATE_MENTORSHIP_SESSIONS_TABLE)
+    existing_columns = get_table_columns(cursor, TABLE_MENTORSHIP_SESSIONS)
+    for col_name, col_def in expected_columns.items():
+        if col_name not in existing_columns:
+            print(f"Adding missing column to {TABLE_MENTORSHIP_SESSIONS}: {col_name}")
+            cursor.execute(f"ALTER TABLE `{TABLE_MENTORSHIP_SESSIONS}` ADD COLUMN {col_name} {col_def}")
+
+    # Create mentorship_requests table if not exists
+    cursor.execute(CREATE_MENTORSHIP_REQUESTS_TABLE)
+    expected_columns = parse_columns_from_sql(CREATE_MENTORSHIP_REQUESTS_TABLE)
+    existing_columns = get_table_columns(cursor, TABLE_MENTORSHIP_REQUESTS)
+    for col_name, col_def in expected_columns.items():
+        if col_name not in existing_columns:
+            print(f"Adding missing column to {TABLE_MENTORSHIP_REQUESTS}: {col_name}")
+            cursor.execute(f"ALTER TABLE `{TABLE_MENTORSHIP_REQUESTS}` ADD COLUMN {col_name} {col_def}")
+
+
     # Seed degrees table if empty
     cursor.execute(f"SELECT COUNT(*) as count FROM `{TABLE_DEGREES}`")
     count_row = cursor.fetchone()
@@ -301,6 +331,7 @@ app.register_blueprint(posts_bp, url_prefix="/posts")
 app.register_blueprint(gurupadigam_bp, url_prefix="/gurupadigam")
 app.register_blueprint(newsletter_bp, url_prefix="/newsletters")
 app.register_blueprint(notifications_bp, url_prefix="/notifications")
+app.register_blueprint(mentorship_bp, url_prefix="/mentorship")
 
 if __name__ == "__main__":
     init_db()

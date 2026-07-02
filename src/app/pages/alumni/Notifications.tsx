@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Bell, CheckCircle, Briefcase, Trophy, Newspaper, Info, Trash2, CheckCheck } from "lucide-react";
+import { Bell, CheckCircle, Briefcase, Trophy, Newspaper, Info, Trash2, CheckCheck, BookOpen } from "lucide-react";
 import {
   getNotifications,
   markNotificationRead,
@@ -49,6 +49,8 @@ export default function AlumniNotifications() {
         return "/alumni/messages";
       case "newsletter":
         return "/alumni/newsletter";
+      case "mentorship":
+        return "/alumni/community?tab=mentorship";
       default:
         return null;
     }
@@ -93,6 +95,8 @@ export default function AlumniNotifications() {
         return <Bell className="w-5 h-5 text-indigo-500" />;
       case "newsletter":
         return <Newspaper className="w-5 h-5 text-green-500" />;
+      case "mentorship":
+        return <BookOpen className="w-5 h-5 text-purple-500" />;
       default:
         return <Bell className="w-5 h-5 text-gray-500" />;
     }
@@ -108,6 +112,8 @@ export default function AlumniNotifications() {
         return "bg-indigo-50";
       case "newsletter":
         return "bg-green-50";
+      case "mentorship":
+        return "bg-purple-50";
       default:
         return "bg-gray-50";
     }
