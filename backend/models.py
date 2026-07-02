@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS `{TABLE_ALUMNI_USERS}` (
     other_accolades JSON DEFAULT NULL,
     previous_experience JSON DEFAULT NULL,
     profile_image VARCHAR(255) DEFAULT NULL,
+    external_links JSON DEFAULT NULL,
+    publications JSON DEFAULT NULL,
+    research JSON DEFAULT NULL,
 
     role ENUM("admin", "alumni") DEFAULT "alumni",
 

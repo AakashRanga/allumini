@@ -92,7 +92,8 @@ def get_all_alumni():
             academic_details,
             created_at as submittedDate,
             is_approved,
-            email_verified
+            email_verified,
+            profile_image
         FROM `{TABLE_ALUMNI_USERS}`
         WHERE role != 'admin'
         ORDER BY created_at DESC

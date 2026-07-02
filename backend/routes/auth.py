@@ -480,7 +480,7 @@ def get_profile():
 
     try:
         user = execute_query(
-            f"SELECT id, name, email, contact_number, academic_details, specialization, awards, honorary_degrees, books_authored, other_accolades, previous_experience, profile_image FROM {TABLE_ALUMNI_USERS} WHERE id=%s",
+            f"SELECT id, name, email, contact_number, academic_details, specialization, awards, honorary_degrees, books_authored, other_accolades, previous_experience, profile_image, external_links, publications, research FROM {TABLE_ALUMNI_USERS} WHERE id=%s",
             (user_id,),
             fetch_one=True
         )
@@ -488,7 +488,7 @@ def get_profile():
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        for key in ["academic_details", "awards", "honorary_degrees", "books_authored", "other_accolades", "previous_experience"]:
+        for key in ["academic_details", "awards", "honorary_degrees", "books_authored", "other_accolades", "previous_experience", "external_links", "publications", "research"]:
             value = user.get(key)
             if value is None:
                 user[key] = []
@@ -502,6 +502,39 @@ def get_profile():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@auth_bp.route("/profile/<int:target_user_id>", methods=["GET"])
+def get_profile_by_id(target_user_id):
+    user_id = get_authenticated_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        user = execute_query(
+            f"SELECT id, name, email, contact_number, academic_details, specialization, awards, honorary_degrees, books_authored, other_accolades, previous_experience, profile_image, role, is_approved, external_links, publications, research FROM {TABLE_ALUMNI_USERS} WHERE id=%s",
+            (target_user_id,),
+            fetch_one=True
+        )
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        for key in ["academic_details", "awards", "honorary_degrees", "books_authored", "other_accolades", "previous_experience", "external_links", "publications", "research"]:
+            value = user.get(key)
+            if value is None:
+                user[key] = []
+            else:
+                try:
+                    user[key] = json.loads(value) if isinstance(value, str) else value
+                except Exception:
+                    user[key] = []
+
+        return jsonify(user), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 @auth_bp.route("/profile", methods=["PUT"])
@@ -528,6 +561,9 @@ def update_profile():
         "books_authored",
         "other_accolades",
         "previous_experience",
+        "external_links",
+        "publications",
+        "research",
     ]
 
     updates = []
@@ -539,6 +575,9 @@ def update_profile():
         "books_authored",
         "other_accolades",
         "previous_experience",
+        "external_links",
+        "publications",
+        "research",
     }
 
     for field in allowed_fields:
@@ -917,14 +956,17 @@ def get_community():
             books_authored, 
             other_accolades, 
             previous_experience, 
-            profile_image
+            profile_image,
+            external_links,
+            publications,
+            research
         FROM {TABLE_ALUMNI_USERS}
         WHERE role != 'admin' AND is_approved = 1
         ORDER BY name ASC
         """
         rows = execute_query(query)
 
-        json_fields = ["academic_details", "awards", "honorary_degrees", "books_authored", "other_accolades", "previous_experience"]
+        json_fields = ["academic_details", "awards", "honorary_degrees", "books_authored", "other_accolades", "previous_experience", "external_links", "publications", "research"]
         for row in rows:
             for key in json_fields:
                 value = row.get(key)

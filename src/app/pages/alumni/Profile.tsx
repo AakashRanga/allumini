@@ -18,6 +18,8 @@ import {
   Upload,
   ImageIcon,
   IndianRupee,
+  ExternalLink,
+  Globe,
 } from "lucide-react";
 import {
   getUserProfile,
@@ -35,6 +37,8 @@ import {
   type ProfileExperienceEntry,
   type UserProfile,
   type AcademicDetail,
+  type BookAuthoredEntry,
+  type ExternalLinkEntry,
   API_BASE_URL,
 } from "@/lib/api";
 import { validateJobPost, JobValidationError, validateUserProfile, ProfileValidationError } from "@/utils/validation";
@@ -60,6 +64,9 @@ const initialProfileData: UserProfile = {
   other_accolades: [],
   previous_experience: [],
   profile_image: null,
+  external_links: [],
+  publications: [],
+  research: [],
 };
 
 export default function Profile() {
@@ -170,14 +177,29 @@ export default function Profile() {
       return;
     }
 
+    const rawBooks = response.data.books_authored || [];
+    const books = rawBooks.map((b: any) => {
+      if (typeof b === "string") return { title: b, link: "" };
+      return { title: b.title || "", link: b.link || "" };
+    });
+
+    const rawLinks = response.data.external_links || [];
+    const links = rawLinks.map((l: any) => {
+      if (typeof l === "string") return { title: "Link", url: l };
+      return { title: l.title || "", url: l.url || "" };
+    });
+
     setProfileData({
       ...initialProfileData,
       ...response.data,
       awards: response.data.awards || [],
       honorary_degrees: response.data.honorary_degrees || [],
-      books_authored: response.data.books_authored || [],
+      books_authored: books,
       other_accolades: response.data.other_accolades || [],
       previous_experience: response.data.previous_experience || [],
+      external_links: links,
+      publications: response.data.publications || [],
+      research: response.data.research || [],
     });
     await fetchActivity();
     setLoading(false);
@@ -236,13 +258,13 @@ export default function Profile() {
   function updateArrayItem(
     key: keyof Pick<
       UserProfile,
-      "awards" | "honorary_degrees" | "books_authored" | "other_accolades"
+      "awards" | "honorary_degrees" | "other_accolades" | "publications" | "research"
     >,
     index: number,
     value: string
   ) {
     setProfileData((prev) => {
-      const copy = [...prev[key]];
+      const copy = [...(prev[key] as string[] || [])];
       copy[index] = value;
       return { ...prev, [key]: copy };
     });
@@ -251,23 +273,72 @@ export default function Profile() {
   function addArrayItem(
     key: keyof Pick<
       UserProfile,
-      "awards" | "honorary_degrees" | "books_authored" | "other_accolades"
+      "awards" | "honorary_degrees" | "other_accolades" | "publications" | "research"
     >
   ) {
-    setProfileData((prev) => ({ ...prev, [key]: [...prev[key], ""] }));
+    setProfileData((prev) => ({ ...prev, [key]: [...(prev[key] as string[] || []), ""] }));
   }
 
   function removeArrayItem(
     key: keyof Pick<
       UserProfile,
-      "awards" | "honorary_degrees" | "books_authored" | "other_accolades"
+      "awards" | "honorary_degrees" | "other_accolades" | "publications" | "research"
     >,
     index: number
   ) {
     setProfileData((prev) => {
-      const copy = [...prev[key]];
+      const copy = [...(prev[key] as string[] || [])];
       copy.splice(index, 1);
       return { ...prev, [key]: copy };
+    });
+  }
+
+  // Books Authored helpers
+  function updateBookItem(index: number, field: keyof BookAuthoredEntry, value: string) {
+    setProfileData((prev) => {
+      const copy = [...(prev.books_authored as BookAuthoredEntry[] || [])];
+      copy[index] = { ...copy[index], [field]: value };
+      return { ...prev, books_authored: copy };
+    });
+  }
+
+  function addBookItem() {
+    setProfileData((prev) => ({
+      ...prev,
+      books_authored: [...(prev.books_authored as BookAuthoredEntry[] || []), { title: "", link: "" }],
+    }));
+  }
+
+  function removeBookItem(index: number) {
+    setProfileData((prev) => {
+      const copy = [...(prev.books_authored as BookAuthoredEntry[] || [])];
+      copy.splice(index, 1);
+      return { ...prev, books_authored: copy };
+    });
+  }
+
+  // External Links helpers
+  function updateExternalLinkItem(index: number, field: keyof ExternalLinkEntry, value: string) {
+    setProfileData((prev) => {
+      const copy = [...(prev.external_links as ExternalLinkEntry[] || [])];
+      copy[index] = { ...copy[index], [field]: value };
+      return { ...prev, external_links: copy };
+    });
+  }
+
+  // Define add link helper
+  function addExternalLinkItem() {
+    setProfileData((prev) => ({
+      ...prev,
+      external_links: [...(prev.external_links as ExternalLinkEntry[] || []), { title: "", url: "" }],
+    }));
+  }
+
+  function removeExternalLinkItem(index: number) {
+    setProfileData((prev) => {
+      const copy = [...(prev.external_links as ExternalLinkEntry[] || [])];
+      copy.splice(index, 1);
+      return { ...prev, external_links: copy };
     });
   }
 
@@ -320,11 +391,14 @@ export default function Profile() {
       specialization: profileData.specialization,
       awards: profileData.awards.filter(Boolean),
       honorary_degrees: profileData.honorary_degrees.filter(Boolean),
-      books_authored: profileData.books_authored.filter(Boolean),
+      books_authored: (profileData.books_authored as BookAuthoredEntry[] || []).filter((book) => book && book.title?.trim()),
       other_accolades: profileData.other_accolades.filter(Boolean),
       previous_experience: profileData.previous_experience.filter((entry) =>
         entry.company || entry.role || entry.duration || entry.description
       ),
+      external_links: (profileData.external_links as ExternalLinkEntry[] || []).filter((link) => link && link.title?.trim() && link.url?.trim()),
+      publications: (profileData.publications || []).filter(Boolean),
+      research: (profileData.research || []).filter(Boolean),
     };
 
     const response = await updateUserProfile(payload);
@@ -341,6 +415,9 @@ export default function Profile() {
       books_authored: payload.books_authored,
       other_accolades: payload.other_accolades,
       previous_experience: payload.previous_experience,
+      external_links: payload.external_links,
+      publications: payload.publications,
+      research: payload.research,
     }));
 
     setMessage("Profile updates saved successfully.");
@@ -661,15 +738,42 @@ export default function Profile() {
                   onRemove={(index) => removeArrayItem("honorary_degrees", index)}
                 />
 
-                <ProfileListSection
-                  title="Books Authored"
-                  icon={<BookOpen className="w-5 h-5 text-indigo-600" />}
-                  items={profileData.books_authored}
+                <ProfileBooksSection
+                  items={profileData.books_authored as BookAuthoredEntry[] || []}
                   isEditing={isEditing}
-                  emptyLabel="No books added yet"
-                  onChange={(index, value) => updateArrayItem("books_authored", index, value)}
-                  onAdd={() => addArrayItem("books_authored")}
-                  onRemove={(index) => removeArrayItem("books_authored", index)}
+                  onChange={updateBookItem}
+                  onAdd={addBookItem}
+                  onRemove={removeBookItem}
+                />
+
+                <ProfileListSection
+                  title="Publications"
+                  icon={<FileText className="w-5 h-5 text-indigo-600" />}
+                  items={profileData.publications || []}
+                  isEditing={isEditing}
+                  emptyLabel="No publications added yet"
+                  onChange={(index, value) => updateArrayItem("publications", index, value)}
+                  onAdd={() => addArrayItem("publications")}
+                  onRemove={(index) => removeArrayItem("publications", index)}
+                />
+
+                <ProfileListSection
+                  title="Research Area"
+                  icon={<Sparkles className="w-5 h-5 text-teal-600" />}
+                  items={profileData.research || []}
+                  isEditing={isEditing}
+                  emptyLabel="No research areas added yet"
+                  onChange={(index, value) => updateArrayItem("research", index, value)}
+                  onAdd={() => addArrayItem("research")}
+                  onRemove={(index) => removeArrayItem("research", index)}
+                />
+
+                <ProfileExternalLinksSection
+                  items={profileData.external_links as ExternalLinkEntry[] || []}
+                  isEditing={isEditing}
+                  onChange={updateExternalLinkItem}
+                  onAdd={addExternalLinkItem}
+                  onRemove={removeExternalLinkItem}
                 />
 
                 <ProfileListSection
@@ -1306,6 +1410,174 @@ function StarBadgeIcon() {
   return (
     <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
       <Sparkles className="w-5 h-5" />
+    </div>
+  );
+}
+
+function ProfileBooksSection({
+  items,
+  isEditing,
+  onChange,
+  onAdd,
+  onRemove,
+}: {
+  items: BookAuthoredEntry[];
+  isEditing: boolean;
+  onChange: (index: number, field: keyof BookAuthoredEntry, value: string) => void;
+  onAdd: () => void;
+  onRemove: (index: number) => void;
+}) {
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-slate-50 p-5">
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-2 text-gray-900 font-semibold text-lg">
+          <BookOpen className="w-5 h-5 text-indigo-600" />
+          Books Authored
+        </div>
+        {isEditing && (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="inline-flex items-center gap-2 rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Add
+          </button>
+        )}
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-sm text-slate-500">No books added yet</p>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div key={`book-${index}`} className="flex flex-col gap-2 rounded-2xl border border-gray-200 bg-white p-3">
+              {isEditing ? (
+                <div className="flex flex-col sm:flex-row gap-2 items-center flex-1">
+                  <input
+                    type="text"
+                    value={item.title}
+                    onChange={(e) => onChange(index, "title", e.target.value)}
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none"
+                    placeholder="Book Title"
+                  />
+                  <input
+                    type="text"
+                    value={item.link || ""}
+                    onChange={(e) => onChange(index, "link", e.target.value)}
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none"
+                    placeholder="Link (Optional)"
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-slate-700">
+                  {item.link ? (
+                    <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium inline-flex items-center gap-1">
+                      {item.title}
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  ) : (
+                    item.title
+                  )}
+                </p>
+              )}
+              {isEditing && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => onRemove(index)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProfileExternalLinksSection({
+  items,
+  isEditing,
+  onChange,
+  onAdd,
+  onRemove,
+}: {
+  items: ExternalLinkEntry[];
+  isEditing: boolean;
+  onChange: (index: number, field: keyof ExternalLinkEntry, value: string) => void;
+  onAdd: () => void;
+  onRemove: (index: number) => void;
+}) {
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-slate-50 p-5">
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-2 text-gray-900 font-semibold text-lg">
+          <Globe className="w-5 h-5 text-blue-600" />
+          External Links
+        </div>
+        {isEditing && (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="inline-flex items-center gap-2 rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Add
+          </button>
+        )}
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-sm text-slate-500">No links added yet</p>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div key={`link-${index}`} className="flex flex-col gap-2 rounded-2xl border border-gray-200 bg-white p-3">
+              {isEditing ? (
+                <div className="flex flex-col sm:flex-row gap-2 items-center flex-1">
+                  <input
+                    type="text"
+                    value={item.title}
+                    onChange={(e) => onChange(index, "title", e.target.value)}
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none"
+                    placeholder="Link Title (e.g. LinkedIn)"
+                  />
+                  <input
+                    type="text"
+                    value={item.url}
+                    onChange={(e) => onChange(index, "url", e.target.value)}
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none"
+                    placeholder="URL (https://...)"
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-slate-700">
+                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium inline-flex items-center gap-1">
+                    {item.title}
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </p>
+              )}
+              {isEditing && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => onRemove(index)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

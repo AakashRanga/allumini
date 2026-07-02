@@ -143,6 +143,16 @@ export type ProfileExperienceEntry = {
   description?: string;
 };
 
+export type BookAuthoredEntry = {
+  title: string;
+  link?: string;
+};
+
+export type ExternalLinkEntry = {
+  title: string;
+  url: string;
+};
+
 export type UserProfile = {
   id: number;
   name: string;
@@ -152,11 +162,16 @@ export type UserProfile = {
   specialization: string | null;
   awards: string[];
   honorary_degrees: string[];
-  books_authored: string[];
+  books_authored: BookAuthoredEntry[] | string[];
   other_accolades: string[];
   previous_experience: ProfileExperienceEntry[];
   profile_image: string | null;
+  
+  external_links?: ExternalLinkEntry[] | null;
+  publications?: string[] | null;
+  research?: string[] | null;
 };
+
 
 export async function getUserProfile() {
   return request<UserProfile>("/auth/profile", { method: "GET" });
@@ -801,4 +816,18 @@ export async function deleteAdminDegree(id: number) {
 
 export async function getCommunityMembers() {
   return request<UserProfile[]>("/auth/community", { method: "GET" });
+}
+
+export type UserActivityResponse = {
+  success: boolean;
+  jobs: JobPost[];
+  achievements: AchievementPost[];
+};
+
+export async function getUserActivity(targetUserId: number) {
+  return request<UserActivityResponse>(`/posts/user-activity/${targetUserId}`, { method: "GET" });
+}
+
+export async function getAlumniProfileById(targetUserId: number) {
+  return request<UserProfile>(`/auth/profile/${targetUserId}`, { method: "GET" });
 }

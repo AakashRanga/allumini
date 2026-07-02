@@ -384,3 +384,38 @@ def admin_delete_post(post_type, post_id):
         return jsonify({"success": True, "message": f"{post_type} deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@posts_bp.route("/user-activity/<int:target_user_id>", methods=["GET"])
+def get_user_activity(target_user_id):
+    user_id = get_authenticated_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        jobs_query = f"""
+        SELECT j.*, a.name as poster_name
+        FROM `{TABLE_JOBS}` j
+        JOIN `{TABLE_ALUMNI_USERS}` a ON j.user_id = a.id
+        WHERE j.user_id = %s AND j.is_blocked = 0
+        ORDER BY j.created_at DESC
+        """
+        jobs = execute_query(jobs_query, (target_user_id,))
+
+        achievements_query = f"""
+        SELECT ac.*, a.name as poster_name
+        FROM `{TABLE_ACHIEVEMENTS}` ac
+        JOIN `{TABLE_ALUMNI_USERS}` a ON ac.user_id = a.id
+        WHERE ac.user_id = %s AND ac.is_blocked = 0
+        ORDER BY ac.created_at DESC
+        """
+        achievements = execute_query(achievements_query, (target_user_id,))
+
+        return jsonify({
+            "success": True,
+            "jobs": jobs,
+            "achievements": achievements
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+

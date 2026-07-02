@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react";
-import { Search, Filter, Eye, Mail, Phone, GraduationCap, Calendar, CheckCircle, Clock } from "lucide-react";
-import { API_BASE_URL } from "@/lib/api";
+import {
+  Search,
+  Filter,
+  Eye,
+  Mail,
+  Phone,
+  GraduationCap,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Users,
+  ShieldCheck,
+  Hourglass,
+} from "lucide-react";
+import { API_BASE_URL, getAlumniProfileById, type UserProfile } from "@/lib/api";
+import ProfileViewModal from "@/app/components/ProfileViewModal";
 
 interface Alumni {
   id: number;
@@ -13,12 +27,15 @@ interface Alumni {
   status: string;
   avatar: string;
   academic_details: any;
+  profile_image: string | null;
 }
 
 export default function AlumniManagement() {
   const [alumniData, setAlumniData] = useState<Alumni[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedAlumni, setSelectedAlumni] = useState<number | null>(null);
+  const [selectedAlumniMember, setSelectedAlumniMember] = useState<UserProfile | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [fetchingAlumniId, setFetchingAlumniId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDegree, setFilterDegree] = useState("all");
 
@@ -48,180 +65,224 @@ export default function AlumniManagement() {
     return matchesSearch && matchesDegree;
   });
 
+  const totalCount = alumniData.length;
+  const verifiedCount = alumniData.filter((a) => a.status === "Verified").length;
+  const pendingCount = alumniData.filter((a) => a.status !== "Verified").length;
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      
+      {/* Header section */}
       <div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Alumni Management</h3>
-        <p className="text-gray-600">View and manage all registered alumni</p>
+        <h3 className="text-2xl font-black text-slate-800 tracking-tight">Alumni Management</h3>
+        <p className="text-slate-500 text-sm mt-1">Monitor, verify, and examine alumni profiles and contributions.</p>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 border border-gray-200">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+      {/* KPI Overview row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center gap-4 relative overflow-hidden group hover:border-purple-200 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform duration-300" />
+          <div className="p-3.5 bg-purple-50 text-purple-600 rounded-2xl relative z-10 shrink-0">
+            <Users className="w-6 h-6" />
+          </div>
+          <div className="relative z-10 min-w-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Alumni</p>
+            <p className="text-2xl font-black text-slate-800 mt-1">{totalCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center gap-4 relative overflow-hidden group hover:border-emerald-200 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform duration-300" />
+          <div className="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl relative z-10 shrink-0">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <div className="relative z-10 min-w-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Verified Members</p>
+            <p className="text-2xl font-black text-slate-800 mt-1">{verifiedCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center gap-4 relative overflow-hidden group hover:border-amber-200 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform duration-300" />
+          <div className="p-3.5 bg-amber-50 text-amber-600 rounded-2xl relative z-10 shrink-0">
+            <Hourglass className="w-6 h-6" />
+          </div>
+          <div className="relative z-10 min-w-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pending Verification</p>
+            <p className="text-2xl font-black text-slate-800 mt-1">{pendingCount}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main search and card content container */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6">
+        
+        {/* Search & Filter row */}
+        <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name or email..."
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-transparent rounded-2xl focus:bg-white focus:border-purple-300 focus:outline-none focus:ring-4 focus:ring-purple-50/50 text-sm text-slate-800 transition-all placeholder:text-slate-400"
             />
           </div>
-          <div className="flex gap-3">
-            <div className="relative">
-              <Filter className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <select
-                value={filterDegree}
-                onChange={(e) => setFilterDegree(e.target.value)}
-                className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
-              >
-                <option value="all">All Degrees</option>
-                <option value="UG">Undergraduate</option>
-                <option value="PG">Postgraduate</option>
-              </select>
+          <div className="sm:w-60 relative">
+            <Filter className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <select
+              value={filterDegree}
+              onChange={(e) => setFilterDegree(e.target.value)}
+              className="w-full pl-11 pr-8 py-3 bg-slate-50 border border-transparent rounded-2xl focus:bg-white focus:border-purple-300 focus:outline-none focus:ring-4 focus:ring-purple-50/50 text-sm text-slate-700 transition-all appearance-none cursor-pointer font-medium"
+            >
+              <option value="all">All Degrees</option>
+              <option value="UG">Undergraduate</option>
+              <option value="PG">Postgraduate</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
             </div>
           </div>
         </div>
 
+        {/* Dynamic content rendering */}
         {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-9 w-9 border-t-2 border-b-2 border-purple-600"></div>
+          </div>
+        ) : filteredAlumni.length === 0 ? (
+          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-3xl p-16 text-center">
+            <p className="text-slate-400 text-sm font-semibold">No alumni members found</p>
+            <p className="text-xs text-slate-400 mt-1">Try modifying your query or degree selection</p>
           </div>
         ) : (
-        <div className="grid gap-4">
-          {filteredAlumni.map((alumni) => (
-            <div
-              key={alumni.id}
-              className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 font-semibold flex-shrink-0">
-                  {alumni.avatar}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-1">{alumni.name}</h3>
-                      <div className="flex flex-wrap gap-2 text-sm text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <Mail className="w-4 h-4" />
-                          {alumni.email}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Phone className="w-4 h-4" />
-                          {alumni.phone}
-                        </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAlumni.map((alumni) => {
+              const hasImage = !!alumni.profile_image;
+              return (
+                <div
+                  key={alumni.id}
+                  className="bg-white border border-slate-100 rounded-3xl p-5 hover:shadow-md hover:border-purple-200 transition-all duration-300 flex flex-col justify-between group relative"
+                >
+                  <div>
+                    {/* Top Header Card */}
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-slate-100 flex items-center justify-center bg-gradient-to-tr from-purple-50 to-indigo-50 text-purple-600 font-extrabold text-lg">
+                        {hasImage ? (
+                          <img
+                            src={`${API_BASE_URL}/profile-images/${alumni.profile_image}`}
+                            alt={alumni.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          alumni.avatar
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-slate-800 truncate text-base leading-snug group-hover:text-purple-600 transition-colors">
+                          {alumni.name}
+                        </h4>
+                        <p className="text-xs text-slate-400 truncate mt-0.5 font-semibold uppercase tracking-wider font-mono">
+                          {alumni.specialization || "Registered Alumni"}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`px-3 py-1 rounded-lg text-xs font-medium ${
-                          alumni.status === "Verified"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-amber-100 text-amber-700"
-                        }`}
-                      >
-                        {alumni.status === "Verified" ? (
-                          <span className="flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            Verified
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            Pending
-                          </span>
-                        )}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setSelectedAlumni(selectedAlumni === alumni.id ? null : alumni.id)
-                        }
-                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
+
+                    {/* Metadata tags */}
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {alumni.degree && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-100/80 rounded-lg px-2.5 py-1">
+                          <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
+                          {alumni.degree === "UG" ? "Undergraduate" : "Postgraduate"}
+                        </span>
+                      )}
+                      {alumni.batch && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-100/80 rounded-lg px-2.5 py-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          Batch {alumni.batch}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Contact details */}
+                    <div className="space-y-2 mb-5 border-t border-slate-50 pt-4">
+                      <div className="flex items-center gap-2.5 text-xs text-slate-600 min-w-0">
+                        <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span className="truncate">{alumni.email}</span>
+                      </div>
+                      {alumni.phone && (
+                        <div className="flex items-center gap-2.5 text-xs text-slate-600 min-w-0">
+                          <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span className="truncate">{alumni.phone}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {selectedAlumni === alumni.id && (
-                    <div className="bg-gray-50 rounded-xl p-4 mt-3 grid md:grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <GraduationCap className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-600">Degree:</span>
-                        <span className="font-medium text-gray-900">
-                          {alumni.degree === "UG" ? "Undergraduate" : "Postgraduate"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-600">Batch:</span>
-                        <span className="font-medium text-gray-900">{alumni.batch}</span>
-                      </div>
-                      <div className="md:col-span-2 flex items-center gap-2 text-sm">
-                        <span className="text-gray-600">Specialization:</span>
-                        <span className="font-medium text-gray-900">{alumni.specialization}</span>
-                      </div>
-                      {alumni.academic_details && (() => {
-                        let detailsArray: any[] = [];
-                        try {
-                          const parsed = typeof alumni.academic_details === 'string'
-                            ? JSON.parse(alumni.academic_details)
-                            : alumni.academic_details;
-                          if (Array.isArray(parsed)) {
-                            detailsArray = parsed;
-                          } else if (parsed && typeof parsed === 'object') {
-                            detailsArray = [parsed];
-                          }
-                        } catch (e) {
-                          console.error("Failed to parse academic details", e);
+                  {/* Footer status row */}
+                  <div className="flex items-center justify-between gap-4 border-t border-slate-50 pt-4 mt-auto">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider ${
+                        alumni.status === "Verified"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {alumni.status === "Verified" ? (
+                        <>
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                          Verified
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                          Pending
+                        </>
+                      )}
+                    </span>
+
+                    <button
+                      onClick={async () => {
+                        setFetchingAlumniId(alumni.id);
+                        const res = await getAlumniProfileById(alumni.id);
+                        if (res.success) {
+                          setSelectedAlumniMember(res.data);
+                          setIsModalOpen(true);
                         }
-
-                        if (detailsArray.length === 0) return null;
-
-                        return (
-                          <div className="md:col-span-2 mt-4 pt-4 border-t border-slate-100">
-                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-3">Academic Pathways</span>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              {detailsArray.map((detail, index) => (
-                                <div key={index} className="flex gap-4 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-purple-200 transition-all group">
-                                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center shrink-0 text-purple-600 font-bold text-sm">
-                                    {detail.degree || "DEG"}
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <p className="text-sm font-black text-slate-800 truncate">
-                                        {detail.degree} {detail.branch ? `— ${detail.branch}` : ""}
-                                      </p>
-                                    </div>
-                                    <p className="text-xs text-slate-500 font-semibold truncate mt-0.5">{detail.college_name || "Institution unspecified"}</p>
-                                    {detail.joining_year && (
-                                      <span className="inline-block mt-2 px-2.5 py-0.5 bg-slate-50 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                                        Class of {detail.joining_year}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
+                        setFetchingAlumniId(null);
+                      }}
+                      disabled={fetchingAlumniId !== null}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-all text-xs font-black cursor-pointer disabled:opacity-50"
+                    >
+                      {fetchingAlumniId === alumni.id ? (
+                        <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-purple-600"></div>
+                      ) : (
+                        <>
+                          <Eye className="w-3.5 h-3.5" />
+                          Profile
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        )}
-
-        {!loading && filteredAlumni.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No alumni found matching your criteria</p>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* Modal Profile Viewer */}
+      <ProfileViewModal
+        member={selectedAlumniMember}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedAlumniMember(null);
+        }}
+      />
     </div>
   );
 }
